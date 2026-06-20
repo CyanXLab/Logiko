@@ -59,6 +59,8 @@ def print_help():
 Commands:
   exit / quit          Leave the chat.
   reset                Clear conversation history.
+  single               Single-turn mode (default, each Q answered independently).
+  multi                Multi-turn context mode (may degrade on long sessions).
   save <file>          Save conversation to file.
   load <file>          Load conversation from file.
   help                 Show this help.
@@ -147,23 +149,53 @@ def extract_answer(generated_text, hint=""):
     return answer
 
 
+def normalize_question(question):
+    """Normalize user input: add '?' if missing for question patterns.
+    
+    This handles cases where user types 'what be fire' instead of 'what be fire?'
+    """
+    q = question.strip()
+    # If already ends with ?, return as-is
+    if q.endswith("?") or q.endswith("!") or q.endswith("."):
+        return q
+    # Question patterns that should end with ?
+    lower = q.lower()
+    question_patterns = [
+        "what ", "who ", "where ", "when ", "why ", "how ", "cu ",
+        "is ", "are ", "do ", "did ", "does ", "can ", "could ",
+        "will ", "would ", "should ", "may ", "might ",
+    ]
+    for pat in question_patterns:
+        if lower.startswith(pat):
+            return q + "?"
+    # Default: return as-is
+    return q
+
+
 def compute_hint(question):
     """Generate a hint to prepend to "A:" for better grounding.
     
     For "what be X?" questions, prepend " X" so the model continues from X.
     For other questions, return "".
+    
+    Works with or without trailing '?'.
     """
-    lower = question.lower().strip()
+    # Normalize: strip trailing punctuation for matching
+    lower = question.lower().strip().rstrip("?!.") 
     # what be X?
-    if lower.startswith("what be ") and lower.endswith("?"):
-        topic = lower[len("what be "):-1].strip()
+    if lower.startswith("what be "):
+        topic = lower[len("what be "):].strip()
         if topic.startswith("one "):
             topic = topic[4:]
-        if topic and len(topic) < 30:
+        if topic and len(topic) < 30 and " " not in topic:
+            # Single-word topic — strong hint
+            return " " + topic
+        elif topic and len(topic) < 30:
+            # Multi-word topic — still useful
             return " " + topic
     # what X mean?
-    if lower.startswith("what ") and " mean?" in lower:
-        morpheme = lower[len("what "):].split(" mean?")[0].strip()
+    if lower.startswith("what ") and " mean" in lower:
+        morpheme = lower[len("what "):].split(" mean")[0].strip()
         if morpheme in ("-a", "-e"):
             return " suffix"
         if morpheme in ("-ist", "-ej", "-il", "-ec", "-uc", "-in", "-id", "-em", "-abl"):
@@ -175,20 +207,11 @@ def compute_hint(question):
         if morpheme == "ta":
             return " ta"
         return ""
-    # how say X in logiko?
-    if lower.startswith("how say ") and "in logiko" in lower:
-        return ""
-    # how form X?
-    if lower.startswith("how form "):
-        return ""
     # how about X?
     if lower.startswith("how about "):
-        topic = lower[len("how about "):].rstrip("?").strip()
+        topic = lower[len("how about "):].strip()
         if topic:
             return " " + topic
-    # which be more X: A or B?
-    if lower.startswith("which be more ") and "?" in lower:
-        return ""
     return ""
 
 
@@ -210,6 +233,10 @@ def main():
                    help="Soft limit on context length (chars); older turns dropped beyond this")
     p.add_argument("--no_hint", action="store_true",
                    help="Don't auto-add answer hint")
+    p.add_argument("--single_turn", action="store_true", default=True,
+                   help="Default: use single-turn mode (no context) for reliability")
+    p.add_argument("--multi_turn", action="store_true",
+                   help="Use multi-turn context mode (may degrade quality on long sessions)")
     p.add_argument("--seed", type=int, default=-1, help="-1 for random seed")
     args = p.parse_args()
 
@@ -252,9 +279,12 @@ def main():
         "no_repeat_ngram_size": args.no_repeat_ngram_size,
         "max_new_tokens": args.max_new_tokens,
         "max_context_chars": args.max_context_chars,
+        "multi_turn": args.multi_turn,  # Default: False (single-turn for reliability)
     }
 
     print(BANNER)
+    mode_str = "multi-turn" if state["multi_turn"] else "single-turn (default, more reliable)"
+    print(f"Mode: {mode_str}  (type 'multi' or 'single' to switch)")
     print(f"Decoding: T={state['temperature']}, top_k={state['top_k']}, "
           f"top_p={state['top_p']}, rep={state['repetition_penalty']}, "
           f"freq={state['frequency_penalty']}, pres={state['presence_penalty']}, "
@@ -306,6 +336,14 @@ def main():
         if user_input == "reset":
             conversation.clear()
             print("(conversation history cleared)")
+            continue
+        if user_input in ("multi", "/multi"):
+            state["multi_turn"] = True
+            print("(multi-turn context mode: ON)")
+            continue
+        if user_input in ("single", "/single"):
+            state["multi_turn"] = False
+            print("(single-turn mode: ON — each question answered independently)")
             continue
         if user_input == "tokens":
             # Estimate token count of current context
@@ -384,15 +422,28 @@ def main():
                 print(f"  invalid value: {val}")
             continue
 
-        # Compute hint
-        hint = "" if args.no_hint else compute_hint(user_input)
+        # Normalize: add '?' if missing for question patterns
+        normalized_input = normalize_question(user_input)
+        
+        # Compute hint based on normalized input
+        hint = "" if args.no_hint else compute_hint(normalized_input)
 
-        # Build multi-turn prompt
-        prompt, n_turns = build_prompt(
-            conversation, user_input,
-            max_chars=state["max_context_chars"],
-            hint=hint,
-        )
+        # Decide whether to use multi-turn context or single-turn
+        # Default: single-turn for reliability; multi-turn only if context exists
+        # and recent history is relevant (not too long)
+        use_context = bool(conversation) and state.get("multi_turn", True)
+        
+        if use_context:
+            # Build multi-turn prompt (use normalized question)
+            prompt, n_turns = build_prompt(
+                conversation, normalized_input,
+                max_chars=state["max_context_chars"],
+                hint=hint,
+            )
+        else:
+            # Single-turn: just the current question
+            prompt = f"Q: {normalized_input}\nA:{hint}"
+            n_turns = 0
 
         # Generate
         t0 = time.time()
@@ -416,12 +467,33 @@ def main():
 
         # Extract just the answer
         answer = extract_answer(output, hint=hint)
+        
+        # Sanity check: if answer is too short (< 20 chars) or looks like a question,
+        # retry without context (single-turn fallback)
+        if len(answer) < 20 or answer.endswith("?") or answer.endswith(":"):
+            single_prompt = f"Q: {normalized_input}\nA:{hint}"
+            retry_output = generate_with_penalties(
+                model, tok, single_prompt,
+                max_new_tokens=state["max_new_tokens"],
+                temperature=state["temperature"],
+                top_k=state["top_k"],
+                top_p=state["top_p"],
+                repetition_penalty=state["repetition_penalty"],
+                frequency_penalty=state["frequency_penalty"],
+                presence_penalty=state["presence_penalty"],
+                no_repeat_ngram_size=state["no_repeat_ngram_size"],
+                device=device,
+            )
+            retry_answer = extract_answer(retry_output, hint=hint)
+            if len(retry_answer) > len(answer) + 10:
+                answer = retry_answer
+                n_turns = 0  # Mark as single-turn
 
         print(f"ai> {answer}")
         print(f"   [{len(answer)} chars, {dt:.2f}s, ctx={n_turns} turns]")
 
-        # Add to conversation history
-        conversation.append(("user", user_input))
+        # Add to conversation history (use normalized input)
+        conversation.append(("user", normalized_input))
         conversation.append(("ai", answer))
 
 
