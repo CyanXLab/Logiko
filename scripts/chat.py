@@ -89,18 +89,68 @@ def parse_setting_cmd(line: str):
     return parts[0].lower(), parts[1]
 
 
-def build_prompt(history, new_question, max_chars=1500, hint=""):
-    """Build a multi-turn prompt from conversation history.
+def is_followup_question(new_question, history):
+    """Detect if new question is a follow-up to recent conversation.
+    
+    Returns True if the question references prior context (pronouns, 
+    topic continuity, short questions like "how about X?", "cu ta...?").
+    """
+    if not history:
+        return False
+    q_lower = new_question.lower().strip().rstrip("?!.")
+    
+    # Pronoun references (ta = it/he/she, this, that)
+    pronoun_indicators = ["ta ", "ta?", "this", "that", "ta-many"]
+    for p in pronoun_indicators:
+        if p in q_lower:
+            return True
+    
+    # Short follow-up patterns
+    short_patterns = ["how about", "what about", "cu ta", "why ta", "how ta",
+                      "and ta", "but ta", "so ta", "then ta"]
+    for p in short_patterns:
+        if q_lower.startswith(p):
+            return True
+    
+    # Very short questions (< 25 chars) likely follow-ups
+    if len(q_lower) < 25:
+        return True
+    
+    # Check topic continuity: if new question contains a noun from recent AI answer
+    recent_ai_answers = [text for role, text in history[-4:] if role == "ai"]
+    if recent_ai_answers:
+        # Get last AI answer's key words
+        last_answer = recent_ai_answers[-1].lower()
+        # Simple: check if any word > 3 chars from question appears in answer
+        q_words = [w for w in q_lower.split() if len(w) > 3]
+        for w in q_words:
+            if w in last_answer:
+                return True
+    
+    return False
+
+
+def build_prompt(history, new_question, max_chars=800, hint="", max_turns=4):
+    """Build a multi-turn prompt from conversation history (v2: limited turns).
+    
+    v2 improvements:
+    - Default max_chars=800 (was 1500) to avoid long context degradation
+    - max_turns=4: only keep last 2 Q-A pairs (4 turns) max
+    - This prevents small model from being overwhelmed by long history
     
     history: list of (role, text) tuples (role in {"user", "ai"})
     new_question: the new user question
-    max_chars: soft limit; older turns are dropped if exceeded
+    max_chars: soft limit on total length
+    hint: hint to prepend to answer
     
     Returns: prompt string, n_turns_included
     """
-    # Build turns from history
+    # Only keep last few turns (max_turns = 4 means 2 Q-A pairs)
+    recent_history = history[-max_turns:] if len(history) > max_turns else history
+    
+    # Build turns from recent history
     turns = []
-    for role, text in history:
+    for role, text in recent_history:
         if role == "user":
             turns.append(f"Q: {text}")
         else:
@@ -108,14 +158,10 @@ def build_prompt(history, new_question, max_chars=1500, hint=""):
     turns.append(f"Q: {new_question}")
     turns.append(f"A:{hint}")
     
-    # If too long, drop oldest turns (keep first Q and most recent)
+    # If still too long, drop oldest turns
     while sum(len(t) for t in turns) > max_chars and len(turns) > 3:
-        # Drop oldest complete Q-A pair (first 2 elements, but keep first Q if it's the opening)
-        if len(turns) > 3:
-            turns.pop(0)
-            turns.pop(0)
-        else:
-            break
+        turns.pop(0)
+        turns.pop(0)
     
     return "\n".join(turns), len(turns)
 
@@ -233,10 +279,10 @@ def main():
                    help="Soft limit on context length (chars); older turns dropped beyond this")
     p.add_argument("--no_hint", action="store_true",
                    help="Don't auto-add answer hint")
-    p.add_argument("--single_turn", action="store_true", default=True,
-                   help="Default: use single-turn mode (no context) for reliability")
-    p.add_argument("--multi_turn", action="store_true",
-                   help="Use multi-turn context mode (may degrade quality on long sessions)")
+    p.add_argument("--single_turn", action="store_true",
+                   help="Force single-turn mode (no context, each Q independent)")
+    p.add_argument("--multi_turn", action="store_true", default=True,
+                   help="Use multi-turn context mode (default, with smart follow-up detection)")
     p.add_argument("--seed", type=int, default=-1, help="-1 for random seed")
     args = p.parse_args()
 
@@ -278,13 +324,14 @@ def main():
         "presence_penalty": args.presence_penalty,
         "no_repeat_ngram_size": args.no_repeat_ngram_size,
         "max_new_tokens": args.max_new_tokens,
-        "max_context_chars": args.max_context_chars,
-        "multi_turn": args.multi_turn,  # Default: False (single-turn for reliability)
+        "max_context_chars": 800,  # v2: reduced from 1200 for small model
+        "multi_turn": not args.single_turn,  # v2: default True (multi with smart detection)
     }
 
     print(BANNER)
-    mode_str = "multi-turn" if state["multi_turn"] else "single-turn (default, more reliable)"
-    print(f"Mode: {mode_str}  (type 'multi' or 'single' to switch)")
+    mode_str = "multi-turn (smart follow-up detection)" if state["multi_turn"] else "single-turn (no context)"
+    print(f"Mode: {mode_str}")
+    print(f"  (type 'multi' or 'single' to switch; multi mode auto-detects follow-up questions)")
     print(f"Decoding: T={state['temperature']}, top_k={state['top_k']}, "
           f"top_p={state['top_p']}, rep={state['repetition_penalty']}, "
           f"freq={state['frequency_penalty']}, pres={state['presence_penalty']}, "
@@ -428,20 +475,24 @@ def main():
         # Compute hint based on normalized input
         hint = "" if args.no_hint else compute_hint(normalized_input)
 
-        # Decide whether to use multi-turn context or single-turn
-        # Default: single-turn for reliability; multi-turn only if context exists
-        # and recent history is relevant (not too long)
-        use_context = bool(conversation) and state.get("multi_turn", True)
+        # Decide whether to use multi-turn context
+        # v2: smart context usage
+        # - If multi_turn mode is ON and question is a follow-up, use context
+        # - If question is NOT a follow-up (new topic), use single-turn even in multi mode
+        # - If multi_turn mode is OFF, always single-turn
+        use_context = False
+        if state.get("multi_turn", True) and conversation:
+            if is_followup_question(normalized_input, conversation):
+                use_context = True
+            # else: new topic, single-turn is better
         
         if use_context:
-            # Build multi-turn prompt (use normalized question)
             prompt, n_turns = build_prompt(
                 conversation, normalized_input,
                 max_chars=state["max_context_chars"],
                 hint=hint,
             )
         else:
-            # Single-turn: just the current question
             prompt = f"Q: {normalized_input}\nA:{hint}"
             n_turns = 0
 
@@ -487,10 +538,12 @@ def main():
             retry_answer = extract_answer(retry_output, hint=hint)
             if len(retry_answer) > len(answer) + 10:
                 answer = retry_answer
-                n_turns = 0  # Mark as single-turn
+                n_turns = 0
 
+        # Show context indicator
+        ctx_indicator = f"ctx={n_turns} turns" if use_context else "no context"
         print(f"ai> {answer}")
-        print(f"   [{len(answer)} chars, {dt:.2f}s, ctx={n_turns} turns]")
+        print(f"   [{len(answer)} chars, {dt:.2f}s, {ctx_indicator}]")
 
         # Add to conversation history (use normalized input)
         conversation.append(("user", normalized_input))
