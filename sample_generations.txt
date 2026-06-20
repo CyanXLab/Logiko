@@ -1,0 +1,77 @@
+Logiko Model Sample Generations
+================================
+
+Model: logiko_sft.pt (1.24M params, 800 pretrain steps + 800 SFT steps)
+Tokenizer: BPE v6, vocab=1500, 0 UNK
+Decoding: T=0.4, top_k=30, top_p=0.9, rep_penalty=1.15
+
+============================================================
+PROMPT: 'Q: what be water?\nA: water'
+Q: what be water?
+A: water be one clear-a liquid. ta freeze in zero degree, and boil in hundred degree. all life need water.
+
+============================================================
+PROMPT: 'Q: what be fire?\nA: fire'
+Q: what be fire?
+A: fire be hot-a and bright-a. ta need air for burn. ta can burn wood and paper, but can not burn water or stone.
+
+============================================================
+PROMPT: 'Q: what be sun?\nA: sun'
+Q: what be sun?
+A: sun be one star. ta give light and warm to earth. ta rise in east and set in west.
+
+============================================================
+PROMPT: 'Q: what be tree?\nA: tree'
+Q: what be tree?
+A: tree be one plant. ta have root, trunk, branch, leaf. ta can live many year. ta give fruit, wood, and shadow.
+
+============================================================
+PROMPT: 'Q: what be person?\nA: person'
+Q: what be person?
+A: person be one animal that can think and speak. ta have head, body, two arm, two leg. ta can make tool and build house.
+
+============================================================
+PROMPT: 'Q: what be music?\nA: music'
+Q: what be music?
+A: music be art of sound. person make music with voice or instrument. music can make person feel happy or sad.
+
+============================================================
+PROMPT: 'Q: what -a mean?\nA: suffix'
+Q: what -a mean?
+A: suffix -a mark adjective. example: big-a mean big, red-a mean red. adjective always come before noun.
+
+============================================================
+PROMPT: 'Q: what mal- mean?\nA: prefix'
+Q: what mal- mean?
+A: prefix mal- mark opposite. example: mal-good mean bad, mal-big mean small, mal-happy mean sad.
+
+============================================================
+PROMPT: 'Q: how form question?\nA:'
+Q: how form question?
+A: do what you want talk about?
+
+============================================================
+PROMPT: 'Q: what ta mean?\nA: ta'
+Q: what ta mean?
+A: ta be third-person pronoun, mean he, she, or it. ta-many mean they.
+
+============================================================
+PROMPT: 'Q: how say I love you in logiko?\nA:'
+Q: how say I love you in logiko?
+A: I love you in logiko be: I love you.
+
+============================================================
+PROMPT: 'Q: what be season?\nA: year'
+Q: what be season?
+A: year have four season: spring, summer, autumn, winter. in spring, plant grow. in summer, weather be hot-a.
+
+============================================================
+PROMPT: 'Q: what be book?\nA: book'
+Q: what be book?
+A: book be many paper with word, bind together.
+
+============================================================
+PROMPT: 'Q: what be food?\nA: food'
+Q: what be food?
+A: food give energy to body. person need food for live. bread, rice, meat, vegetable be common-a food.
+

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+
+# Virtual envs
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Training artifacts (large, regenerable)
+*.log
+tokens.pt
+
+# Keep model checkpoints (in models/) and corpus (in data/)
+# but ignore stray checkpoints in working dirs
+logiko_*.pt
+!models/logiko_*.pt
