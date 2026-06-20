@@ -917,3 +917,235 @@ that teachistin in cookej use cutil cut apple.
 ## 附录：词根索引
 
 完整索引见 `vocabulary.md`。本规范定义 **820 个核心词根 + 12 类派生词缀 + 90 个功能词 = ~912 token**，加上标点和数字，总 token 表约 1100，符合"5MB 训练数据可收敛"的设计目标。
+
+---
+
+## 8. v3.0 增量改进（2026-06-20）
+
+### 8.1 彻底 (C)V(C) 化：消除辅音簇
+
+v2 仍残留辅音簇（`str`/`tr`/`pr`/`fl`/`sl` 等），违反音素纯化原则。v3 严格化：
+
+| v2（有辅音簇） | v3（拆分） | 说明 |
+|:---|:---|:---|
+| `through` → `tru` | `teru` | `tr` → `ter` |
+| `strong` → `stron` | `steron` | `str` → `ster` |
+| `friend` → `frend` | `ferend` | `fr` → `fer` |
+| `flower` → `flor` | `felor` | `fl` → `fel` |
+| `sleep` → `slep` | `selep` | `sl` → `sel` |
+| `plane` → `plen` | `pelen` | `pl` → `pel` |
+| `cloud` | `kelud` | `kl` → `kel` |
+| `glass` | `gelas` | `gl` → `gel` |
+| `bread` | `bered` | `br` → `ber` |
+| `free` | `fere` | `fr` → `fer` |
+| `true` | `tere` | `tr` → `ter` |
+| `grow` | `gerow` | `gr` → `ger` |
+| `cry` | `keri` | `kr` → `ker` |
+| `fly` | `feli` | `fl` → `fel` |
+| `slow` | `selow` | `sl` → `sel` |
+
+**规则**：任何两个辅音相邻时，插入 `e` 形成新音节。这确保每个音节都是 (C)V(C) 结构。
+
+### 8.2 语篇标记词（新增 15 个）
+
+为支持长文本组织，新增语篇连接词：
+
+| 词根 | 义 | 例 |
+|:---|:---|:---|
+| `however` | 然而 | `I did want go. however, rain prevent I.` |
+| `moreover` | 此外 | `ta be intelligent-a. moreover, ta be kind-a.` |
+| `firstly` | 首先 | `firstly, we gather data. secondly, we analyze.` |
+| `secondly` | 其次 | 同上 |
+| `finally` | 最后 | `finally, we conclude.` |
+| `in-conclusion` | 总之 | `in-conclusion, result be positive-a.` |
+| `in-addition` | 此外 | `in-addition, cost be low-a.` |
+| `for-example` | 例如 | `for-example, water boil at hundred degree.` |
+| `in-fact` | 事实上 | `in-fact, ta not be true-a.` |
+| `therefore` | 因此（强化） | `rain. therefore, ground wet-a.` |
+| `thus` | 因而 | `thus, we must act.` |
+| `meanwhile` | 同时 | `meanwhile, ta continue work.` |
+| `subsequently` | 随后 | `subsequently, problem be solve.` |
+| `specifically` | 具体地 | `specifically, ta need oxygen.` |
+| `generally` | 一般地 | `generally, plant need sun.` |
+
+### 8.3 关系从句前置化（修饰语一致性）
+
+v2：`person who did eat apple` （后置，违反"修饰语绝对前置"）
+v3：`(who did eat apple) person` （前置，但用括号）
+
+**实际写法**（避免括号）：用 `that-rel` 引导，前置：
+
+| v2 | v3 |
+|:---|:---|
+| `person who did eat apple` | `apple-eat person` （复合词化） |
+| `book which I did read` | `I-read book` |
+| `house that-rel ta did build` | `ta-build house` |
+
+**复杂关系从句**仍保留后置（避免前置过长）：
+- v3：`person [who did eat apple in learnej yesterday]` （后置，方括号可选）
+
+**规则**：短关系从句复合词化（前置），长关系从句保留后置。
+
+### 8.4 情态动词与助动词固定顺序
+
+v2 问题：`I did must go` 助词堆积歧义
+v3 规则：**[情态] + [时态] + [副词] + [动词]**
+
+| 含义 | v2 | v3 |
+|:---|:---|:---|
+| 我必须去 | `I must go.` | `I must go.` |
+| 我过去必须去 | `I did must go.` ❌ | `I past must go.` ✅ |
+| 我将必须去 | `I will must go.` ❌ | `I fut must must go.` ❌ → `I fut need go.` ✅ |
+| 我正在必须去 | (歧义) | `I is must go.` ✅ |
+
+**规则**：情态动词（must/can/should/may）固定在最前，时态助词（past/fut/did/will/is/have）在其后。
+
+### 8.5 长思考链格式
+
+v3 引入"显式推理"标记：
+
+```
+question: why ice melt when heat?
+thinking: first, ice be solid-a because molecule be lock. 
+          second, heat increase molecular-a motion. 
+          third, at zero degree, motion break structure. 
+          therefore, ice become water.
+answer: because heat break molecular-a structure of ice.
+```
+
+`thinking:` 标签后的内容是模型的推理过程，`answer:` 是最终答案。这借鉴 Chain-of-Thought 但用 Logiko 实现。
+
+### 8.6 数学语料升级（初中水平）
+
+v2：仅算术 + 一元一次
+v3 增加：
+- **一元二次方程**：`if x² + 5x + 6 = 0, then x = -2 or x = -3`
+- **几何证明**：`triangle ABC have angle A = 60°, angle B = 70°. therefore angle C = 50°.`
+- **概率组合**：`if bag have 3 red ball and 2 blue ball, probability of pick 2 red = 3/10`
+- **代数恒等式**：`(a+b)² = a² + 2ab + b²`
+- **不等式**：`if x > 5, then 2x > 10`
+
+
+---
+
+## 9. v4.0 增量改进（2026-06-20 晚）
+
+针对 v3 暴露的问题（算式不会计算、容量瓶颈、推理是模板、时态/关系从句/情态/复合词/语篇未完全修），v4 做以下改进：
+
+### 9.1 时态一致性标记（句末后缀）
+
+v3 问题：时态用 `did`/`past`/`will`/`fut` 散布在动词前，长句中容易丢失一致性。
+v4 方案：**句末时态后缀**（可选，用于强化时态）：
+
+| 后缀 | 时态 | 例 |
+|:---:|:---|:---|
+| `-s` | 现在 | `I eat-s apple.` (我吃苹果) |
+| `-d` | 过去 | `I eat-d apple.` (我吃了苹果) |
+| `-r` | 将来 | `I eat-r apple.` (我将吃苹果) |
+
+**与助词系统兼容**：`I did eat-d apple.`（双重标记，更清晰），或单独用 `I eat-d apple.`（简洁）。
+
+**规则**：动词词根 + 时态后缀。如果用助词 `did/will`，后缀可省略。
+
+### 9.2 关系从句前置化（彻底解决）
+
+v3：短从句复合词化，长从句后置（不一致）。
+v4：**所有关系从句前置**，用 `ki` 引导：
+
+| 含义 | v3 | v4 |
+|:---|:---|:---|
+| 吃了苹果的人 | `apple-eat person` (复合) | `ki eat-d apple person` ✅ |
+| 我读过的书 | `I-read book` | `ki I read-d book` ✅ |
+| 他建的房子 | `ta-build house` | `ki ta build-d house` ✅ |
+
+**结构**：`ki` + [从句] + [被修饰名词]
+
+**优势**：
+1. 修饰语绝对前置原则彻底贯彻
+2. 不需要复合词化（避免歧义）
+3. 模型只需学一个 `ki` 标记
+
+### 9.3 情态系统明确化
+
+v3 问题：`did must go` 助词堆积。
+v4 规则：**[情态] + [时态] + [副词] + [动词]**，固定顺序：
+
+| 含义 | v4 |
+|:---|:---|
+| 我必须去 | `I must go.` |
+| 我过去必须去 | `I must past go.` ✅ |
+| 我将必须去 | `I must fut go.` ✅ |
+| 我正在必须去 | `I must is go.` ✅ |
+| 我必须不去 | `I must not go.` ✅ |
+
+**情态优先级**：`must`/`can`/`should`/`may` > `did`/`past`/`is`/`will`/`fut`/`have` > `not` > 副词 > 动词
+
+### 9.4 专业词汇复合规则
+
+v4 建立复合词词典规则：
+
+**规则 1**：核心词根 + 限定词根，用连字符（新词）
+- `heart-disease` (心脏病)
+- `brain-cell` (脑细胞)
+- `sun-light` (阳光)
+
+**规则 2**：稳定复合词融合（已收录词典）
+- `coldbox` (冰箱)
+- `thinkmachine` (电脑)
+- `learnej` (学校)
+- `teachist` (教师)
+
+**规则 3**：专业术语用"领域-概念"结构
+- `math-variable` (数学变量)
+- `med-heart` (医学心脏)
+- `law-contract` (法律合同)
+
+### 9.5 语篇标记完全融入
+
+v3 加了语篇标记但语料中用得少。v4 强制每段长文本至少用 1 个语篇标记：
+
+```
+firstly, water be essential-a for life. moreover, ta cover most of earth. 
+however, sea water be salt. in-conclusion, person must protect fresh-a water.
+```
+
+### 9.6 自然 CoT（非模板拼接）
+
+v3 问题：推理是 `firstly/secondly/thirdly` 模板拼接。
+v4 方案：**自然语言因果链**，用 `because/so/therefore/this mean/which lead to`：
+
+```
+v3 (模板): firstly, sun heat water. secondly, water evaporate. thirdly, ta form cloud. finally, ta rain.
+v4 (自然): because sun heat water, ta evaporate and rise. when ta cool in atmosphere, ta condense into cloud. this lead to rain, which flow back to sea. so, water cycle be complete.
+```
+
+### 9.7 计算过程语料（解决"不会计算"）
+
+v3 问题：模型只学 `add 5 and 3 = 8` 的格式，没学计算过程。
+v4 方案：加入**竖式计算过程**语料：
+
+```
+to add 47 and 38: 
+  7 + 8 = 15, write 5, carry 1.
+  4 + 3 + 1 = 8.
+  so, 47 + 38 = 85.
+```
+
+```
+to multiply 9 by 8:
+  9 × 8 = 72.
+  because 9 × 8 = 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 = 72.
+  so, 9 × 8 = 72.
+```
+
+### 9.8 拒绝采样 SFT（替代 RLHF/DPO）
+
+v4 用**拒绝采样 SFT**（rejection sampling fine-tuning）替代昂贵的 RLHF：
+
+1. 用 SFT 模型对每个问题生成 N=4 个回答
+2. 用规则评分器打分（长度、相关性、语法正确性）
+3. 选最高分回答作为最终 SFT 数据
+4. 再训练一轮
+
+这模拟了 RLHF 的"偏好优化"效果，但 CPU 可行。
+

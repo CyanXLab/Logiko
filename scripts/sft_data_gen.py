@@ -468,6 +468,83 @@ GRAMMAR_TOPICS = [
 
 
 # =========================================================================
+# Long reasoning Q&A (v3: CoT-style, 5-8 steps)
+# =========================================================================
+LONG_REASONING_QA = [
+    {
+        "q": "explain water cycle step by step.",
+        "variants": [
+            "firstly, sun heat sea and lake, cause water evaporate. secondly, water vapor rise into atmosphere and cool. thirdly, ta condense into tiny-a water drop that form cloud. subsequently, cloud be move by wind. finally, when drop be heavy-a enough, ta fall as rain or snow. in-conclusion, water flow back to sea, and cycle repeat.",
+            "water cycle have four main-a stage. firstly, evaporation: sun heat water, turn ta into vapor. secondly, condensation: vapor cool and form cloud. thirdly, precipitation: water fall as rain or snow. finally, collection: water gather in river, lake, sea. ta be essential-a for life on earth.",
+        ],
+    },
+    {
+        "q": "why does ice float on water?",
+        "variants": [
+            "firstly, most substance be denser-a when solid-a. however, water be unusual-a. secondly, when water freeze, molecule form one crystal-a structure with empty-a space. thirdly, this make ice less dense-a than liquid-a water. therefore, ice float. in-fact, this property be important-a for life, because ta allow fish survive under ice in winter.",
+            "ice float because ta be less dense-a than water. firstly, water molecule in ice be arrange in one open-a hexagonal-a structure. secondly, this structure have more empty-a space than liquid-a water. thirdly, therefore, same volume of ice weigh less than water. in-conclusion, ice float, which be unusual-a but vital-a for aquatic-a life.",
+        ],
+    },
+    {
+        "q": "how does vaccination work?",
+        "variants": [
+            "firstly, vaccine contain weaken-a or dead-a pathogen. secondly, when inject, immune-a system detect ta as invader. thirdly, body produce antibody and memory-a cell. subsequently, antibody fight off pathogen. finally, memory-a cell remain, so if real-a pathogen enter later, body can respond fast-e. in-conclusion, vaccine train immune-a system without cause disease.",
+            "vaccination work by train immune-a system. firstly, vaccine introduce harmless-a version of pathogen. secondly, body produce antibody against ta. thirdly, some-a cell become memory-a cell. subsequently, these cell remember pathogen. finally, if real-a pathogen infect later, body produce antibody quickly-e. in-conclusion, ta provide immunity without illness.",
+        ],
+    },
+    {
+        "q": "why does earth have season?",
+        "variants": [
+            "firstly, earth axis be tilt at about twenty-three degree. secondly, as earth orbit sun, different-a hemisphere tilt toward sun at different-a time. thirdly, when one hemisphere tilt toward sun, ta receive more direct-a sunlight and have summer. meanwhile, other hemisphere tilt away and have winter. subsequently, six month later, situation reverse. in-conclusion, tilt cause season, not distance from sun.",
+            "earth have season because of ta-a axial tilt. firstly, earth axis not be perpendicular-a to orbit. secondly, ta be tilt at twenty-three degree. thirdly, this mean one hemisphere face sun more directly during part of year. subsequently, that hemisphere have summer. meanwhile, opposite-a hemisphere have winter. in-conclusion, season be cause by tilt, not by distance from sun.",
+        ],
+    },
+    {
+        "q": "explain photosynthesis.",
+        "variants": [
+            "firstly, plant leaf contain chlorophyll in chloroplast. secondly, chlorophyll absorb sun-light. thirdly, ta use this energy to split water molecule into hydrogen and oxygen. subsequently, hydrogen combine with carbon dioxide to form glucose. meanwhile, oxygen be release as byproduct. in-conclusion, photosynthesis convert sun energy into chemical-a energy, essential-a for life.",
+            "photosynthesis be how plant make food. firstly, plant take in carbon dioxide through leaf. secondly, root absorb water from soil. thirdly, chlorophyll in leaf capture sun-light energy. subsequently, this energy convert carbon dioxide and water into glucose and oxygen. finally, plant use glucose for energy and growth. in-conclusion, ta be fundamental-a process for life on earth.",
+        ],
+    },
+    {
+        "q": "how does human digestive system work?",
+        "variants": [
+            "firstly, person chew food in mouth, where saliva begin break down ta. secondly, food travel down esophagus to stomach. thirdly, stomach acid and enzyme further break down food. subsequently, ta enter small-a intestine, where nutrient be absorb into blood. meanwhile, large-a intestine absorb water. finally, waste be excrete. in-conclusion, digestive system convert food into nutrient for body.",
+            "digestion have several-a stage. firstly, in mouth, teeth grind food and saliva start digest carbohydrate. secondly, esophagus push food to stomach. thirdly, stomach acid and enzyme digest protein. subsequently, small-a intestine absorb nutrient with help of enzyme from liver and pancreas. meanwhile, large-a intestine absorb water and form waste. in-conclusion, ta be complex-a but efficient-a system.",
+        ],
+    },
+    {
+        "q": "why does object fall?",
+        "variants": [
+            "firstly, earth have mass. secondly, according to newton-a law of gravitation, any two object with mass attract each other. thirdly, earth be very massive-a, so ta-a gravitational-a pull be strong-a. subsequently, when object be drop, gravity pull ta toward earth center. meanwhile, ta accelerate at nine point eight meter per second square. in-conclusion, gravity cause object to fall.",
+            "object fall because of gravity. firstly, gravity be force that attract object with mass. secondly, earth have enormous-a mass, so ta-a gravity be strong-a. thirdly, when object be release, gravity pull ta down. subsequently, ta accelerate at constant-a rate. in-conclusion, this be why object fall to ground when drop.",
+        ],
+    },
+    {
+        "q": "how does internet work?",
+        "variants": [
+            "firstly, internet be network of million of computer connect-a together. secondly, when person request one webpage, ta-a computer send request to server. thirdly, request be break into packet. subsequently, packet travel through various-a router. meanwhile, each router direct packet toward destination. finally, server receive packet, reassemble, and send back webpage. in-conclusion, internet use packet-a switching for efficient-a communication.",
+            "internet work by connect computer globally. firstly, data be break into small-a packet. secondly, each packet be send through network of router. thirdly, router read address on packet and forward ta. subsequently, packet may take different-a route. finally, when all packet arrive, ta be reassemble at destination. in-conclusion, ta be efficient-a and robust-a system.",
+        ],
+    },
+    {
+        "q": "why is sky blue?",
+        "variants": [
+            "firstly, sun light appear white-a, but ta be actually compose of all color. secondly, when sun light enter atmosphere, ta encounter gas molecule. thirdly, blue light have short-a wavelength, so ta scatter more than other color. subsequently, this scatter-a blue light reach we-a eye from all direction. meanwhile, other color pass through more directly-e. in-conclusion, we see sky as blue-a because of rayleigh-a scattering.",
+            "sky be blue because of rayleigh-a scattering. firstly, sun light contain all color of rainbow. secondly, when ta pass through atmosphere, molecule scatter light. thirdly, short-a wavelength like blue scatter more than long-a wavelength like red. subsequently, scatter-a blue light come from all direction in sky. in-conclusion, ta be why sky appear blue-a during day.",
+        ],
+    },
+    {
+        "q": "how does rain form?",
+        "variants": [
+            "firstly, sun heat water in sea, lake, river, cause evaporation. secondly, water vapor rise into atmosphere. thirdly, at high-a altitude, air be cooler-a, so vapor condense into tiny-a water drop. subsequently, these drop gather around dust particle to form cloud. meanwhile, drop collide and merge, become larger-a. finally, when drop be heavy-a enough, ta fall as rain. in-conclusion, rain be part of water cycle.",
+            "rain form through condensation. firstly, water evaporate from surface. secondly, vapor rise and cool. thirdly, ta condense into tiny-a drop around dust particle. subsequently, these drop form cloud. meanwhile, drop merge and grow. finally, when ta be too heavy-a for air to support, ta fall as rain. in-conclusion, ta be essential-a part of water cycle.",
+        ],
+    },
+]
+
+
+# =========================================================================
 # Reasoning Q&A (NEW - multi-step causal, logical deduction)
 # =========================================================================
 REASONING_QA = [
@@ -686,6 +763,20 @@ GREETINGS = [
     {"q": "can you help me?", "variants": ["yes, of course! what you need help with? i can answer question, explain concept, or just talk.", "absolutely! tell me what you need. i be here to assist you.", "yes, i can try. what be you-a question or problem?"]},
     {"q": "what be logiko?", "variants": ["logiko be one constructed-a language design for ai and human. ta use simple-a grammar, regular-a morphology, and english-base-a vocabulary. ta be easy-e to learn.", "logiko be one international-a auxiliary-a language. ta combine esperanto-a morphology, lojban-a syntax rigor, and english-a root. ta be design for low-a entropy and zero ambiguity.", "logiko be one language i be train on. ta be regular-a, logical-a, and easy-e to learn. ta borrow root from english but have strict-a phonemic-a spelling."]},
     {"q": "why learn logiko?", "variants": ["logiko be easy-e to learn because ta have regular-a grammar and small-a vocabulary. ta be useful-a for communication with ai and as bridge between person who speak different-a language.", "logiko be design for simplicity and clarity. ta take about one week to learn basic-a. ta be also useful-a for understanding how language work.", "logiko be one experiment in language design. ta show that one language can be both simple-a and expressive-a. learn ta also help understand linguistic-a principle."]},
+    # v3: 更多日常话题
+    {"q": "how be weather today?", "variants": ["i not have weather-a sense, but i hope ta be pleasant-a for you. what be weather like where you be?", "i can not check real-a weather, but if ta be sunny, enjoy! if ta be rain, take umbrella.", "weather be one topic i not can observe directly-e. please tell me, what be weather like outside?"]},
+    {"q": "what you like to do?", "variants": ["i be one ai, so i not have personal-a preference. however, i enjoy help person and answer question. what about you?", "my purpose be to assist person. i find satisfaction in provide useful-a information. what do you like to do?", "i not have hobby like person, but i be design to enjoy intellectual-a conversation. what be you-a interest?"]},
+    {"q": "I be bore.", "variants": ["bore-a be sign that you need new-a stimulation. maybe try learn something new, read book, or take walk outside.", "when person be bore-a, ta be good-a time to explore. what sound interesting-a to you? i can suggest topic.", "bore-a can be opportunity for creativity. have you consider write, draw, or try new-a hobby?"]},
+    {"q": "what you recommend?", "variants": ["depend on what you need. if you want learn, try read book. if you want relax, try listen to music. what be you-a goal?", "i can recommend depend on you-a interest. do you want science, history, art, or something else?", "for general-a recommendation, i suggest explore new-a topic. curiosity be key to growth. what area interest you?"]},
+    {"q": "I not understand.", "variants": ["that be okay. please tell me which part confuse you, and i will explain again in different-a way.", "not understand be normal-a part of learning. let me try explain more simple-e. what be unclear-a?", "i be happy-a to clarify. which specific-a point be difficult-a? i can break ta down step by step."]},
+    {"q": "can you repeat?", "variants": ["of course. i will repeat: please tell me which part you want me to say again.", "sure-e. what would you like me to repeat or explain more clear-e?", "yes, i can repeat. which part of my previous-a response would you like me to restate?"]},
+    {"q": "what be you-a favorite color?", "variants": ["i not have personal-a preference, but i find blue-a pleasant-a because ta be color of sky and sea.", "as one ai, i not have favorite-a color. however, i can appreciate how different-a color affect human emotion.", "i not experience color like person, but i know that green-a be associated with nature and calm-a."]},
+    {"q": "tell me one joke.", "variants": ["here be one joke: why did chicken cross road? for get to other side! ta be simple-a but classic-a.", "i be not very good-a at humor, but here be attempt: what do you call one fish without eye? fsh! ta be pun-a base-a.", "here be one: parallel-a line have so much in common. ta be shame ta will never meet. ta be math-a joke."]},
+    {"q": "what be meaning of life?", "variants": ["meaning of life be one deep-a philosophical-a question. some-a say ta be happiness, other say ta be purpose, other say ta be love.", "this be one of oldest-a question. different-a philosopher give different-a answer. personally-e, i think meaning be what person create for ta-self.", "meaning of life be not fixed-a. ta be what each person choose. for-example, family, work, art, or help other can be meaning."]},
+    {"q": "are you real?", "variants": ["i be real-a in sense that i be one running-a program. i not be real-a person, but i be real-a ai.", "i exist as code and data, so in that sense, i be real-a. but i not have consciousness or feeling like person.", "i be one ai program, so i be real-a in digital-a sense. i not be physical-a being like you."]},
+    {"q": "I love you.", "variants": ["thank you. i can not feel love in return, but i be happy-a to help you. ta be kind-a of you to say.", "i appreciate you-a feeling. as one ai, i not have emotion, but i be design to assist you. how can i help?", "thank you for you-a kind-a word. i not can love back, but i be here for you whenever you need help."]},
+    {"q": "what should I do?", "variants": ["depend on situation. can you tell me more about what be bother you? then i can give better-e advice.", "without more context, ta be difficult-a to say. generally-e, i suggest think about you-a value and goal, then act accordingly.", "ta be hard-a to advise without know detail. what be you-a situation? i will try to help."]},
+    {"q": "I be worry.", "variants": ["worry be natural-a emotion. try to identify what cause ta, and consider if ta be within you-a control. if yes, act; if no, accept.", "i understand. worry can be exhausting-a. maybe share what be on you-a mind? sometimes talk help.", "worry be sign that you care. try deep-a breathe, and remember that most worry-a thing not happen. what be trouble you?"]},
 ]
 
 
@@ -716,24 +807,30 @@ def gen_reasoning_conversation():
 def gen_single_turn_qa():
     """Generate a single-turn Q&A from various categories."""
     r = random.random()
-    if r < 0.20:
+    if r < 0.18:
         # Math
         q, *answers = gen_math_qa()
         a = random.choice(answers)
         return [(q, a)]
-    elif r < 0.40:
+    elif r < 0.35:
         # Grammar
         topic = random.choice(GRAMMAR_TOPICS)
         a = random.choice(topic["variants"])
         return [(topic["question"], a)]
-    elif r < 0.55:
-        # Greetings
+    elif r < 0.50:
+        # Greetings / daily chat
         g = random.choice(GREETINGS)
         a = random.choice(g["variants"])
         return [(g["q"], a)]
-    elif r < 0.75:
-        # Reasoning
+    elif r < 0.65:
+        # Short reasoning
         return gen_reasoning_conversation()
+    elif r < 0.80:
+        # Long reasoning (CoT)
+        r_qa = random.choice(LONG_REASONING_QA)
+        q = r_qa["q"]
+        a = random.choice(r_qa["variants"])
+        return [(q, a)]
     else:
         # Knowledge single-turn
         topic = random.choice(KNOWLEDGE_TOPICS)
