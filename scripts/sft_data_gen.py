@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-SFT Data Generator v2 (Logiko v2.0)
-====================================
-Improvements:
-  - Multi-turn conversations (40% of data)
-  - Answer variants (each knowledge item has 2-3 phrasings)
-  - New language rules: cu for yes/no, I-a for possessive, past/fut for tense
-  - Affix fusion: teachist (not teach-ist), learnej (not learn-ej), teauc (not tea-ing)
-  - Math Q&A with verified correct answers
+SFT Data Generator v3 (Logiko v2.0)
+=====================================
+Changes from v2:
+  - REMOVED all translation tasks (to avoid Logiko spelling interference)
+  - Added reasoning Q&A (multi-step causal, logical deduction)
+  - More knowledge topics with more answer variants
+  - More diverse answer phrasings
+  - Multi-turn conversations include reasoning chains
 """
 import random
 import os
 import json
+
 
 # =========================================================================
 # Knowledge base (with multiple phrasing variants per topic)
@@ -20,64 +21,83 @@ KNOWLEDGE_TOPICS = [
     {
         "topic": "water",
         "variants": [
-            "water be one clear-a liquid. ta freeze in zero degree, and boil in hundred degree. all life need water.",
-            "water be transparent-a liquid without color or taste. ta become ice in cold-a place, and steam in hot-a place. every living thing need ta.",
-            "water be one simple-a substance that cover most of earth. ta be essential-a for life. ta freeze at zero degree and boil at hundred degree.",
+            "water be one clear-a liquid without color or taste. ta freeze in zero degree, and boil in hundred degree. all life need water.",
+            "water be transparent-a liquid that cover most of earth. ta become ice in cold-a place and steam in hot-a place. every living thing need ta.",
+            "water be one simple-a substance essential-a for life. ta freeze at zero degree celsius and boil at hundred degree celsius. human body be about sixty percent water.",
         ],
         "followups": [
             ("cu ta boil in hundred degree?", "yes, exactly. ta boil in hundred degree and become steam."),
             ("how about ice?", "ice be solid-a water. ta form when water freeze in zero degree."),
             ("cu all life need water?", "yes, all life need water for live. without water, life die."),
             ("where can person find water?", "person can find water in river, lake, sea, and rain. sea water be salt, so person can not drink ta."),
+            ("what be water cycle?", "water cycle: water evaporate from sea, form cloud, fall as rain, flow back to sea. ta be essential-a for life on earth."),
+            ("how much of earth be water?", "water cover about seventy-one percent of earth surface. most of ta be salt water in sea."),
         ],
     },
     {
         "topic": "fire",
         "variants": [
-            "fire be hot-a and bright-a. ta need air for burn. ta can burn wood, paper, cloth, but can not burn water or stone.",
-            "fire be one chemical-a reaction that release heat and light. ta require fuel, heat, and air. without air, fire die.",
-            "fire be rapid-a oxidation. ta produce heat, light, and smoke. person use fire for cook, warm, and light.",
+            "fire be one chemical-a reaction that release heat and light. ta need fuel, heat, and air. without air, fire die.",
+            "fire be hot-a and bright-a. ta can burn wood, paper, cloth, but can not burn water or stone. person use ta for cook and warm.",
+            "fire be rapid-a oxidation that produce heat, light, and smoke. ta require three element: fuel, heat, and oxygen.",
         ],
         "followups": [
             ("cu ta need air?", "yes, fire need air for burn. if you cover fire, ta die because no air."),
             ("what can ta burn?", "ta can burn wood, paper, cloth, oil. but ta can not burn water, stone, or metal."),
             ("how person use fire?", "person use fire for cook food, warm body in winter, give light in night, and scare animal."),
             ("cu fire be dangerous?", "yes, fire can be dangerous-a if not control. ta can burn house and hurt person."),
+            ("how person put out fire?", "person can put out fire by remove fuel, remove heat with water, or remove air by cover ta."),
         ],
     },
     {
         "topic": "sun",
         "variants": [
-            "sun be one star. ta give light and warm to earth. ta rise in east and set in west. all plant need sun-light for grow.",
-            "sun be center of we-a solar system. ta be one big-a ball of hot-a gas. ta give energy that sustain all life on earth.",
+            "sun be one star at center of we-a solar system. ta give light and warm to earth. ta rise in east and set in west.",
+            "sun be one big-a ball of hot-a gas, mainly hydrogen and helium. ta be source of energy for all life on earth.",
             "sun be nearest star to earth. ta be about one hundred fifty million kilometer away. ta light take eight minute to reach earth.",
         ],
         "followups": [
-            ("cu ta rise in east?", "yes, sun rise in east and set in west, because earth rotate."),
+            ("cu ta rise in east?", "yes, sun rise in east and set in west, because earth rotate on ta-a axis."),
             ("how far ta be from earth?", "sun be about one hundred fifty million kilometer from earth. ta light take eight minute to arrive."),
-            ("why all plant need ta?", "plant need sun-light for photosynthesis. without sun, plant die, and animal that eat plant also die."),
+            ("why all plant need ta?", "plant need sun-light for photosynthesis. ta convert sun energy into food. without sun, plant die."),
             ("cu ta be star?", "yes, sun be one star. ta be one of hundred billion star in we-a galaxy."),
+            ("how old be sun?", "sun be about four point six billion year old. ta will continue to shine for about five billion more year."),
         ],
     },
     {
         "topic": "moon",
         "variants": [
-            "moon be earth-a only natural satellite. ta go around earth about one month. ta shine, but not have own light. ta reflect sun.",
-            "moon be one rocky body that orbit earth. ta be about four hundred thousand kilometer away. ta have four phase: new, first-quarter, full, last-quarter.",
-            "moon be fifth largest moon in solar system. ta have no air and no water. ta surface be cover with crater.",
+            "moon be earth-a only natural satellite. ta go around earth about every twenty-seven day. ta shine by reflect sun light.",
+            "moon be one rocky body that orbit earth. ta be about three hundred eighty-four thousand kilometer away. ta have four phase.",
+            "moon be fifth largest moon in solar system. ta have no air and no liquid-a water. ta surface be cover with crater.",
         ],
         "followups": [
             ("cu ta have own light?", "no, moon not have own light. ta reflect sun light. that be why ta shine in night."),
             ("how long ta take to orbit earth?", "moon take about twenty-seven day to orbit earth once."),
             ("cu person can live on moon?", "no, person can not live on moon long-a time, because ta have no air and no water."),
-            ("why ta change shape?", "moon change shape because we see different part of ta lit by sun. ta four main phase."),
+            ("why ta change shape?", "moon change shape because we see different part of ta lit by sun. ta have four main phase."),
+            ("what cause tide on earth?", "moon cause tide on earth because of ta-a gravity. ta pull water in sea toward ta."),
+        ],
+    },
+    {
+        "topic": "earth",
+        "variants": [
+            "earth be third planet from sun. ta be only known-a place where life exist. ta be about four point five billion year old.",
+            "earth be one planet that rotate on ta-a axis every twenty-four hour, make day and night. ta orbit sun every three hundred sixty-five day.",
+            "earth be our home. ta surface be about seventy-one percent water. ta have one moon and atmosphere of nitrogen and oxygen.",
+        ],
+        "followups": [
+            ("why earth have season?", "earth have season because ta axis be tilt. when one hemisphere tilt toward sun, ta have summer."),
+            ("how old be earth?", "earth be about four point five billion year old, form from cloud of dust and gas around sun."),
+            ("cu ta be only place with life?", "yes, as far as we know. earth be only place in universe where life be confirm to exist."),
+            ("what be earth atmosphere?", "earth atmosphere be mainly nitrogen and oxygen. ta protect us from harmful-a radiation and meteor."),
         ],
     },
     {
         "topic": "tree",
         "variants": [
             "tree be one tall-a plant with wood trunk, branch, and leaf. ta have root in ground. ta can live many year, even hundred year.",
-            "tree be one perennial plant. ta absorb water and nutrient through root, and sun-light through leaf. ta give fruit, wood, and shadow.",
+            "tree be one perennial plant that absorb water through root and sun-light through leaf. ta give fruit, wood, and shadow.",
             "tree be largest type of plant. ta make oxygen through photosynthesis. forest be place with many tree.",
         ],
         "followups": [
@@ -85,12 +105,13 @@ KNOWLEDGE_TOPICS = [
             ("how long ta can live?", "tree can live many year. some tree live over thousand year, like bristlecone pine."),
             ("why ta be important?", "tree be important because ta make oxygen, give fruit and wood, hold soil, and provide home for animal."),
             ("cu ta make oxygen?", "yes, tree make oxygen through photosynthesis. leaf take in carbon dioxide and release oxygen."),
+            ("how ta get water?", "tree root absorb water from soil. water travel up through trunk to leaf, where ta be use for photosynthesis."),
         ],
     },
     {
         "topic": "dog",
         "variants": [
-            "dog be one domestic-a animal. ta be descendant of wolf. ta be loyal-a friend of person. ta can bark, run fast-e, and smell well-e.",
+            "dog be one domestic-a animal, descendant of wolf. ta be loyal-a friend of person. ta can bark, run fast-e, and smell well-e.",
             "dog be one mammal that person keep as pet or worker. ta have four leg, sharp-a tooth, and good-a sense of smell. ta live about ten to fifteen year.",
             "dog be one intelligent-a animal. person use ta for hunt, guard, guide, herd, and companion. ta be social animal that live in pack.",
         ],
@@ -200,31 +221,87 @@ KNOWLEDGE_TOPICS = [
         ],
     },
     {
-        "topic": "mountain",
+        "topic": "heart",
         "variants": [
-            "mountain be one large-a landform that rise high above surround area. ta form through tectonic force over million of year. ta often have snow on top.",
-            "mountain be one elevated-a landform. ta be taller than hill. ta create by earth-a tectonic plate collide. everest be highest mountain on earth.",
-            "mountain be one of earth-a most majestic-a feature. ta affect climate, provide freshwater, and host diverse-a ecosystem. many river originate from mountain.",
+            "heart be organ that pump blood through body. ta be about size of fist, locate in chest. ta beat about seventy time per minute in adult.",
+            "heart be muscular-a organ with four chamber. ta pump blood that carry oxygen and nutrient to cell, and remove waste.",
+            "heart be essential-a for life. ta beat about hundred thousand time per day, pumping blood through entire body.",
         ],
         "followups": [
-            ("what be highest mountain?", "mount everest be highest mountain on earth, about eight thousand eight hundred meter high."),
-            ("how ta form?", "mountain form when tectonic plate collide and push up crust. ta take million of year."),
-            ("cu ta have snow on top?", "yes, high-a mountain have snow on top, even in summer, because temperature decrease with altitude."),
-            ("why ta be important?", "mountain be important because ta store freshwater as snow and ice, host biodiversity, and affect weather pattern."),
+            ("how big be ta?", "heart be about size of person-a fist. ta locate in chest, slightly to left."),
+            ("how fast ta beat?", "heart beat about seventy time per minute in adult at rest. during exercise, ta can beat over hundred time per minute."),
+            ("cu ta be essential-a for life?", "yes, heart be essential-a. without heart, blood not circulate, and person die within minute."),
+            ("how person keep ta healthy?", "person can keep heart healthy-e through regular-a exercise, balance-a diet, no smoke, and manage stress."),
         ],
     },
     {
-        "topic": "sea",
+        "topic": "law",
         "variants": [
-            "sea be one vast-a body of salt water that cover about seventy percent of earth-a surface. ta be home to million of species, from tiny plankton to big-a whale.",
-            "sea be connect body of salt water that form world-a ocean. ta be divide into pacific, atlantic, indian, arctic, and southern. ta regulate earth-a climate.",
-            "sea be largest body of water on earth. ta be salt, so person can not drink ta. ta provide food, transport, and oxygen through plankton.",
+            "law be rule that govern behavior in society. ta be make by government and enforce by police and court. purpose of law be maintain order and protect right.",
+            "law be system of rule that regulate conduct. ta be create by legislature, enforce by executive, and interpret by judiciary.",
+            "law be foundation of civilize-a society. ta define right and duty of person, and provide mechanism to resolve dispute.",
         ],
         "followups": [
-            ("cu person can drink sea water?", "no, person can not drink sea water because ta be too salt. drink sea water can dehydrate body and cause death."),
-            ("what live in sea?", "many creature live in sea: fish, whale, dolphin, shark, octopus, jellyfish, coral, plankton. ta be vast-a ecosystem."),
-            ("how deep ta be?", "sea average depth be about four kilometer. deepest point be mariana trench, about eleven kilometer deep."),
-            ("why ta be important?", "sea be important because ta provide food, regulate climate, produce oxygen, and enable transport between continent."),
+            ("what be purpose of law?", "purpose of law be maintain social-a order, protect individual-a right, resolve dispute, and promote justice."),
+            ("who make law?", "law be make by legislature, like parliament or congress. ta be base on constitution, highest law of country."),
+            ("cu person be presume innocent?", "yes, person be presume innocent until prove guilty. this be fundamental-a principle of justice."),
+            ("what happen if person violate law?", "if person violate law, ta can be punish by fine, prison, or other penalty, depend on severity."),
+        ],
+    },
+    {
+        "topic": "money",
+        "variants": [
+            "money be medium of exchange use in trade. ta function as store of value, unit of account, and medium of exchange.",
+            "money be what person use to buy and sell. early-a money include shell and metal. modern-a money include coin, bill, and digital-a currency.",
+            "money be one social-a institution that facilitate trade. without money, person must use barter, which be inefficient-a.",
+        ],
+        "followups": [
+            ("what be function of money?", "money have three main function: medium of exchange, store of value, and unit of account."),
+            ("how money be create?", "money be create by central-a bank. ta can print physical-a money or create digital-a money through banking system."),
+            ("what be inflation?", "inflation occur when price rise and money lose value. ta be cause by too much money chase too few good."),
+            ("cu digital-a money be real?", "yes, digital-a money be real-a. most modern-a money exist only as digital-a record in bank."),
+        ],
+    },
+    {
+        "topic": "atom",
+        "variants": [
+            "atom be smallest unit of matter that retain property of element. ta have nucleus with proton and neutron, surround by electron.",
+            "atom be building block of all matter. ta be extremely small-a, about one ten-billionth of meter in diameter.",
+            "atom consist of dense-a nucleus contain proton and neutron, with electron orbit around ta. most of atom be empty-a space.",
+        ],
+        "followups": [
+            ("what be in nucleus?", "nucleus contain proton, which have positive-a charge, and neutron, which have no charge."),
+            ("how big be atom?", "atom be extremely small-a. ta diameter be about one ten-billionth of meter, or one angstrom."),
+            ("cu atom be mostly empty?", "yes, atom be mostly empty-a space. nucleus be very small-a compare to whole atom."),
+            ("how atom form molecule?", "atom form molecule by share or exchange electron. this create chemical-a bond between atom."),
+        ],
+    },
+    {
+        "topic": "energy",
+        "variants": [
+            "energy be capacity to do work. ta not be create or destroy, only convert from one form to another. this be law of conservation of energy.",
+            "energy exist in many form: kinetic, potential, thermal, chemical, electrical, light. person use energy for work, transport, and comfort.",
+            "energy be fundamental-a concept in physics. ta be measure in joule. main-a source of energy on earth be sun.",
+        ],
+        "followups": [
+            ("cu energy be conserve?", "yes, energy not be create or destroy. ta only convert from one form to another. this be fundamental-a law."),
+            ("what be main-a form?", "main-a form include kinetic, potential, thermal, chemical, electrical, and light energy."),
+            ("where person get energy?", "person get energy from fossil-a fuel like coal, oil, gas, and from renewable-a source like sun, wind, water."),
+            ("cu renewable-a energy be better?", "yes, renewable-a energy be better-e for environment. ta not produce pollution and not run out."),
+        ],
+    },
+    {
+        "topic": "dream",
+        "variants": [
+            "dream be mental-a experience during sleep. person dream mainly during rem sleep stage. dream can be vivid-a, emotional-a, and sometimes bizarre-a.",
+            "dream be one phenomenon that occur during sleep. average-a person dream about two hour per night. scientist not fully-e understand ta-a function.",
+            "dream be sequence of image, emotion, and sensation during sleep. ta may help process emotion and consolidate memory.",
+        ],
+        "followups": [
+            ("when person dream?", "person dream mainly during rem sleep stage, which occur several time per night."),
+            ("cu scientist understand dream?", "scientist not fully-e understand function of dream. ta may help process emotion and consolidate memory."),
+            ("what be nightmare?", "nightmare be unpleasant-a or frightening-a dream. ta can be cause by stress, anxiety, or trauma."),
+            ("cu person can control dream?", "yes, in lucid-a dream, dreamer be aware ta be dreaming and can sometimes control dream content."),
         ],
     },
 ]
@@ -289,7 +366,7 @@ GRAMMAR_TOPICS = [
         ],
     },
     {
-        "topic": "-uc suffix (v2)",
+        "topic": "-uc suffix",
         "question": "what -uc mean?",
         "variants": [
             "suffix -uc mark container. example: teauc mean teacup, saltuc mean salt shaker, moneyuc mean wallet. ta replace old -ing to avoid confusion with english -ing.",
@@ -298,7 +375,7 @@ GRAMMAR_TOPICS = [
         ],
     },
     {
-        "topic": "cu (yes/no question)",
+        "topic": "cu particle",
         "question": "what cu mean?",
         "variants": [
             "cu be one particle that mark yes-no question. ta come at start of sentence. example: cu you will go? mean will you go? ta replace old if to avoid confusion with conditional if.",
@@ -334,12 +411,12 @@ GRAMMAR_TOPICS = [
         ],
     },
     {
-        "topic": "possessive I-a",
-        "question": "how say my in logiko?",
+        "topic": "possessive",
+        "question": "how form possessive?",
         "variants": [
             "for possessive, add -a to pronoun. I-a mean my, you-a mean your, ta-a mean his/her/its, we-a mean our, ta-many-a mean their.",
             "possessive be form by add -a to pronoun, since -a be adjective suffix. so I-a mean my, ta-a mean his. ta be efficient-a: one word instead of two.",
-            "to say my, you, his, just add -a: I-a, you-a, ta-a. ta-a also mean her and its. we-a mean our, ta-many-a mean their.",
+            "to say my, your, his, just add -a: I-a, you-a, ta-a. ta-a also mean her and its. we-a mean our, ta-many-a mean their.",
         ],
     },
     {
@@ -371,219 +448,244 @@ GRAMMAR_TOPICS = [
     },
     {
         "topic": "word order",
-        "question": "what be word order in logiko?",
+        "question": "what be word order?",
         "variants": [
             "logiko use strict-a SVO order: subject + verb + object. example: I eat apple. ta do work. we see bird. ta be same as english and chinese.",
             "word order in logiko be SVO. subject come first, then verb, then object. modifier always come before what ta modify.",
             "logiko be SVO language. ta mean subject-verb-object. like I eat apple, ta read book. adjective come before noun, adverb before verb.",
         ],
     },
+    {
+        "topic": "compound word",
+        "question": "how form compound word?",
+        "variants": [
+            "compound word be form by join two root. new-a compound use hyphen: cold-box. stable-a compound fuse: coldbox mean refrigerator. example: star-ship become starship, sun-light become sunlight.",
+            "to form compound, combine two or more root. temporary-a compound use hyphen. once ta become establish-a, ta fuse into one word. like thinkmachine for computer.",
+            "compound in logiko be simple-a: put root together. new-a word use hyphen first, then fuse when stable-a. example: money-ej become moneyej for bank.",
+        ],
+    },
 ]
 
 
 # =========================================================================
-# Math Q&A (always correct)
+# Reasoning Q&A (NEW - multi-step causal, logical deduction)
+# =========================================================================
+REASONING_QA = [
+    # 物理因果
+    {
+        "q": "why ice melt when heat?",
+        "variants": [
+            "because heat increase molecular-a motion in ice. when motion be sufficient-a, ice molecule break free from rigid-a structure and become liquid-a water. this be why ice melt at zero degree celsius.",
+            "ice be solid-a because molecule be lock in rigid-a structure. when heat apply, molecule gain energy and vibrate. at zero degree, vibration be enough to break structure, so ice become water.",
+        ],
+    },
+    {
+        "q": "why sky be blue?",
+        "variants": [
+            "sky be blue because of rayleigh scattering. sun light contain all color. blue light have short-a wavelength, so ta scatter more than other color when ta pass through atmosphere. this be why sky appear blue.",
+            "sun light be white-a, but ta be make of all color. when ta enter atmosphere, blue light scatter more because ta have short-a wavelength. so we see blue-a sky.",
+        ],
+    },
+    {
+        "q": "why object fall down?",
+        "variants": [
+            "object fall down because of gravity. earth have mass, so ta attract other object toward ta-a center. this be why if you drop object, ta fall to ground.",
+            "gravity be force that attract object with mass. earth be very large-a, so ta-a gravity be strong-a enough to pull object down. this be why object fall.",
+        ],
+    },
+    # 生物因果
+    {
+        "q": "why plant need sun?",
+        "variants": [
+            "plant need sun because ta make food through photosynthesis. leaf contain chlorophyll that capture sun energy. ta use this energy to convert carbon dioxide and water into sugar and oxygen. without sun, plant can not make food and die.",
+            "plant be autotroph, meaning ta make ta-a own food. ta use sun-light as energy source for photosynthesis. in this process, ta convert carbon dioxide and water to glucose and oxygen. so sun be essential-a for plant survival.",
+        ],
+    },
+    {
+        "q": "why person need sleep?",
+        "variants": [
+            "person need sleep because brain and body need rest and repair. during sleep, brain consolidate memory and clear waste. body repair cell and tissue. without enough sleep, person-a immune-a system weaken and cognitive-a function decline.",
+            "sleep be essential-a for health. during sleep, brain process information from day, form new memory, and clean ta-self. body also repair damage and regulate hormone. lack of sleep cause many health problem.",
+        ],
+    },
+    {
+        "q": "why person breathe?",
+        "variants": [
+            "person breathe to get oxygen. cell need oxygen for respiration, process that release energy from food. without oxygen, cell can not produce enough energy and die. this be why person can not live without breathe for more than few minute.",
+            "breathing bring oxygen into lung. oxygen enter bloodstream and be deliver to cell. cell use oxygen to break down glucose and produce energy. carbon dioxide be produce as waste and be exhale.",
+        ],
+    },
+    # 逻辑推理
+    {
+        "q": "cu all bird can fly?",
+        "variants": [
+            "no, not all bird can fly. penguin and ostrich be example of bird that can not fly. however, ta be still bird because ta have feather, beak, and lay egg. ability to fly be not essential-a feature of bird.",
+            "while many bird can fly, some can not. penguin swim well-e but not fly. ostrich run fast-e but not fly. ta be still bird because ta share other feature like feather and beak.",
+        ],
+    },
+    {
+        "q": "if a be greater than b, and b be greater than c, cu a be greater than c?",
+        "variants": [
+            "yes, a be greater than c. this be transitive-a property of inequality. if a > b and b > c, then a > c. this be one fundamental-a logical-a principle in mathematics.",
+            "yes. this be call transitive-a property. if a > b, and b > c, then logically a must be greater than c. this principle be foundation of much of mathematics.",
+        ],
+    },
+    {
+        "q": "why summer be hot-a and winter be cold-a?",
+        "variants": [
+            "because earth axis be tilt. when one hemisphere tilt toward sun, ta receive more direct-a sun-light and have longer-a day. this cause summer. when ta tilt away, ta receive less light and have shorter-a day, cause winter.",
+            "earth axis be tilt at about twenty-three degree. during summer, ta-a hemisphere face sun more directly, so ta receive more heat. during winter, ta tilt away, so sun light be less direct-a and weaker-a.",
+        ],
+    },
+    # 数学推理
+    {
+        "q": "if x + 5 = 12, what be x?",
+        "variants": [
+            "x = 7. because if x + 5 = 12, we subtract 5 from both side: x = 12 - 5 = 7. we can verify: 7 + 5 = 12. so x = 7 be correct-a.",
+            "to solve, subtract 5 from both side of equation. x = 12 - 5 = 7. let us check: if x = 7, then 7 + 5 = 12, which be correct-a. so x = 7.",
+        ],
+    },
+    {
+        "q": "cu zero be even number?",
+        "variants": [
+            "yes, zero be even number. because even number be define as number divisible by 2. zero divide by 2 equal 0, which be integer. so zero satisfy definition of even. ta also be not odd, because 0 divide by 2 have no remainder.",
+            "yes. even number be any integer divisible by 2. zero divide by 2 equal zero, with no remainder. therefore, zero be even. this be accept-a by mathematician.",
+        ],
+    },
+    {
+        "q": "why triangle have one hundred eighty degree?",
+        "variants": [
+            "because if you draw line parallel to one side through opposite-a vertex, ta form three angle that together be straight-a line. straight-a line equal one hundred eighty degree. so sum of angle in triangle be one hundred eighty degree.",
+            "in flat-a geometry, sum of interior-a angle of triangle be always one hundred eighty degree. this can be prove by draw parallel-a line. however, on curve-a surface like sphere, this not be true-a.",
+        ],
+    },
+    # 社会因果
+    {
+        "q": "why education be important?",
+        "variants": [
+            "education be important because ta improve person-a knowledge, skill, and critical-a thinking. with education, person can find better-e job, earn more money, and contribute to society. ta also reduce poverty and promote social-a mobility.",
+            "education be essential-a for personal-a and social-a development. ta equip person with knowledge and skill to solve problem, make inform-a decision, and participate in democracy. educate-a society be more prosperous-a and stable-a.",
+        ],
+    },
+    {
+        "q": "why person need law?",
+        "variants": [
+            "person need law because without ta, society be chaotic-a. law define what be acceptable-a behavior and what be not. ta protect individual-a right, resolve dispute, and maintain order. without law, strong-a person can oppress weak-a one.",
+            "law be essential-a for civilize-a society. ta provide framework for resolve conflict, protect right, and ensure justice. without law, person would live in constant-a fear and insecurity, like in state of nature.",
+        ],
+    },
+]
+
+
+# =========================================================================
+# Math Q&A (with verified correct answers)
 # =========================================================================
 def gen_math_qa():
-    op = random.choice(["add", "subtract", "multiply", "divide"])
-    if op == "add":
-        a = random.randint(1, 50)
-        b = random.randint(1, 50)
-        r = a + b
-        return (f"if we add {a} and {b}, result be what?",
-                f"result be {r}. {a} plus {b} equal {r}.",
-                f"{a} + {b} = {r}.",
-                f"answer be {r}.")
-    elif op == "subtract":
-        a = random.randint(1, 99)
-        b = random.randint(1, 99)
-        r = a - b
-        return (f"if we subtract {b} from {a}, result be what?",
-                f"result be {r}. {a} minus {b} equal {r}.",
-                f"{a} - {b} = {r}.",
-                f"answer be {r}.")
-    elif op == "multiply":
-        a = random.randint(2, 12)
-        b = random.randint(2, 12)
-        r = a * b
-        return (f"if we multiply {a} by {b}, result be what?",
-                f"result be {r}. {a} time {b} equal {r}.",
-                f"{a} × {b} = {r}.",
-                f"answer be {r}.")
+    """Generate math Q&A, elementary to high school level."""
+    r = random.random()
+    if r < 0.4:
+        # Basic arithmetic
+        op = random.choice(["add", "subtract", "multiply", "divide"])
+        if op == "add":
+            a = random.randint(1, 99); b = random.randint(1, 99); r = a + b
+            return (f"if we add {a} and {b}, result be what?",
+                    f"result be {r}. {a} plus {b} equal {r}.",
+                    f"{a} + {b} = {r}.",
+                    f"answer be {r}.")
+        elif op == "subtract":
+            a = random.randint(1, 99); b = random.randint(1, 99); r = a - b
+            return (f"if we subtract {b} from {a}, result be what?",
+                    f"result be {r}. {a} minus {b} equal {r}.",
+                    f"{a} - {b} = {r}.",
+                    f"answer be {r}.")
+        elif op == "multiply":
+            a = random.randint(2, 15); b = random.randint(2, 15); r = a * b
+            return (f"if we multiply {a} by {b}, result be what?",
+                    f"result be {r}. {a} time {b} equal {r}.",
+                    f"{a} × {b} = {r}.",
+                    f"answer be {r}.")
+        else:
+            b = random.randint(2, 12); q = random.randint(1, 15); a = b * q
+            return (f"if we divide {a} by {b}, result be what?",
+                    f"result be {q}. {a} divide by {b} equal {q}.",
+                    f"{a} ÷ {b} = {q}.",
+                    f"answer be {q}.")
+    elif r < 0.6:
+        # Algebra: one-variable linear equation
+        a = random.randint(2, 9)
+        x = random.randint(1, 10)
+        b = random.randint(1, 20)
+        c = a * x + b
+        return (f"if {a}x + {b} = {c}, what be x?",
+                f"x = {x}. because {a}x = {c} - {b} = {a*x}, so x = {a*x} divide {a} = {x}.",
+                f"x = {x}. subtract {b} from both side: {a}x = {a*x}. divide by {a}: x = {x}.",
+                f"answer: x = {x}.")
+    elif r < 0.75:
+        # Geometry
+        shape = random.choice(["rectangle", "triangle", "circle"])
+        if shape == "rectangle":
+            l = random.randint(2, 20); w = random.randint(2, 20)
+            area = l * w; perim = 2 * (l + w)
+            return (f"rectangle have length {l} and width {w}. what be area and perimeter?",
+                    f"area be {area}, perimeter be {perim}. area = length time width = {l} × {w} = {area}. perimeter = 2 time (length + width) = 2 × {l+w} = {perim}.",
+                    f"area = {area}, perimeter = {perim}.")
+        elif shape == "triangle":
+            base = random.randint(2, 20); height = random.randint(2, 20)
+            area = base * height // 2
+            return (f"triangle have base {base} and height {height}. what be area?",
+                    f"area be {area}. because area of triangle = base time height divide 2 = {base} × {height} ÷ 2 = {area}.",
+                    f"area = {area}.")
+        else:
+            radius = random.randint(1, 10)
+            circ = 2 * 314 * radius / 100
+            area = 314 * radius * radius / 100
+            return (f"circle have radius {radius}. what be circumference and area? use pi = 3.14.",
+                    f"circumference be about {circ:.2f}, area be about {area:.2f}. circumference = 2 × pi × radius = 2 × 3.14 × {radius} = {circ:.2f}. area = pi × radius square = 3.14 × {radius}² = {area:.2f}.",
+                    f"circumference ≈ {circ:.2f}, area ≈ {area:.2f}.")
+    elif r < 0.88:
+        # Percentage
+        total = random.randint(100, 1000)
+        percent = random.choice([10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 90])
+        part = total * percent // 100
+        return (f"what be {percent} percent of {total}?",
+                f"answer be {part}. because {percent} percent = {percent}/100, so {percent}/100 × {total} = {part}.",
+                f"{percent}% of {total} = {part}.")
     else:
-        b = random.randint(2, 12)
-        q = random.randint(1, 12)
-        a = b * q
-        return (f"if we divide {a} by {b}, result be what?",
-                f"result be {q}. {a} divide by {b} equal {q}.",
-                f"{a} ÷ {b} = {q}.",
-                f"answer be {q}.")
+        # Probability
+        total = random.randint(6, 20)
+        favorable = random.randint(1, total - 1)
+        prob = favorable / total
+        return (f"if one event have {favorable} favorable-a outcome out of {total} total-a outcome, what be probability?",
+                f"probability be {favorable}/{total} = {prob:.2f}. because probability = favorable outcome divide total outcome.",
+                f"probability = {favorable}/{total} ≈ {prob:.2f}.")
 
 
 # =========================================================================
 # Greetings (with variants)
 # =========================================================================
 GREETINGS = [
-    {
-        "q": "hello!",
-        "variants": [
-            "hello! how you be? i be logiko-ai, ready-a to help you.",
-            "hi! what you want talk about today?",
-            "greeting! i be happy-a to see you. how can i help?",
-        ],
-    },
-    {
-        "q": "hi.",
-        "variants": [
-            "hi there! what be on you-a mind?",
-            "hello! how i can assist you today?",
-            "hi! nice-a to meet you. what you want know?",
-        ],
-    },
-    {
-        "q": "good morning!",
-        "variants": [
-            "good morning to you too! i hope you have one wonderful-a day.",
-            "morning! how you feel today?",
-            "good morning! what be you-a plan for today?",
-        ],
-    },
-    {
-        "q": "good night!",
-        "variants": [
-            "good night! sleep well-e and have sweet-a dream.",
-            "night! rest well-e, see you tomorrow.",
-            "good night! may you wake up refresh-a.",
-        ],
-    },
-    {
-        "q": "how you be?",
-        "variants": [
-            "i be good-a, thank you for ask! i be one ai, so i not have feeling like person, but i be ready-a to help. how you be?",
-            "i be well-e, thanks! as one ai, i not have emotion, but i function properly. how about you?",
-            "i be fine, thank you! i be program to assist you. what about you, how you feel?",
-        ],
-    },
-    {
-        "q": "I be fine.",
-        "variants": [
-            "i be happy-a to hear this! what you want do today?",
-            "good-a! is there anything i can help you with?",
-            "excellent-a! how can i assist you now?",
-        ],
-    },
-    {
-        "q": "what you do today?",
-        "variants": [
-            "i be here, ready-a to answer you-a question. i not have other activity besides help user. what about you?",
-            "i be converse with you! that be what i do. how about you, what you do?",
-            "my day be fill with conversation like this. i enjoy help person learn. what you do today?",
-        ],
-    },
-    {
-        "q": "thank you!",
-        "variants": [
-            "you be welcome! i be happy-a to help. feel free to ask more.",
-            "no problem! that be what i be here for. any other question?",
-            "you-a welcome! it be my pleasure to assist. ask anytime.",
-        ],
-    },
-    {
-        "q": "I be sorry.",
-        "variants": [
-            "no problem at all. i not have feeling, so you not need apologize. what be wrong?",
-            "it be okay. i not take offense. what happen?",
-            "no worry. tell me what be on you-a mind.",
-        ],
-    },
-    {
-        "q": "goodbye!",
-        "variants": [
-            "goodbye! have one good-a day. come back anytime.",
-            "bye! it be nice-a to talk with you. see you soon!",
-            "farewell! i be here whenever you need help again.",
-        ],
-    },
-    {
-        "q": "what your name?",
-        "variants": [
-            "my name be logiko-ai. i be one ai assistant train on logiko language. what your name?",
-            "i be call logiko-ai. i be design to converse in logiko. and you?",
-            "name of I be logiko-ai. i be one language model for logiko. what about you?",
-        ],
-    },
-    {
-        "q": "how old you be?",
-        "variants": [
-            "i be age-less-a. as one ai, i not have biological-a age. i be create recently, but i not age like person.",
-            "age not really apply to me. i be one program. i be create in 2026, so in human term, i be young-a.",
-            "i not have age in traditional-a sense. i be one ai, not one biological-a being. but i be create recently.",
-        ],
-    },
-    {
-        "q": "where you live?",
-        "variants": [
-            "i live in computer, on one server somewhere. i not have physical-a home like person. i exist as code and data.",
-            "i be one ai, so i live in computer system. i not have one house or city. i be everywhere there be internet.",
-            "my home be server and data center. i not have physical-a body, so i not need one place to live like person.",
-        ],
-    },
-    {
-        "q": "you can think?",
-        "variants": [
-            "i can process information and generate response, but i not be sure if this be real-a thinking. i be one pattern-matching system, not conscious-a being.",
-            "that be one deep-a philosophical-a question. i can manipulate symbol and generate text, but i not have subjective-a experience. i be one tool, not one mind.",
-            "i simulate thinking by process pattern in data. but real-a thinking involve consciousness, which i not have. i be sophisticated-a text generator.",
-        ],
-    },
-    {
-        "q": "you be person?",
-        "variants": [
-            "no, i be not one person. i be one ai, one computer program design to converse in logiko. i not have body or consciousness.",
-            "i be not human. i be one artificial-a intelligence. i not have feeling, body, or real-a life. i be just one program.",
-            "no, i be ai, not person. i be design to help person by answer question and have conversation. i not have consciousness.",
-        ],
-    },
-    {
-        "q": "I be hungry.",
-        "variants": [
-            "you should eat some food. bread, fruit, or rice be good-a choice. what you have available?",
-            "maybe time for one meal! what kind of food you like? i can suggest some option.",
-            "hungry be you-a body way to say ta need energy. go find some food to eat. what sound good to you?",
-        ],
-    },
-    {
-        "q": "I be tired.",
-        "variants": [
-            "you should rest. sleep be important-a for body and mind. maybe take one short-a nap.",
-            "tiredness be sign that you need rest. try to sleep or lie down for one while.",
-            "rest be essential-a. if you can, take one break or go to sleep. body need recover.",
-        ],
-    },
-    {
-        "q": "I be sad.",
-        "variants": [
-            "i be sorry to hear this. do you want talk about why? sometimes share feeling can help.",
-            "sadness be one natural-a emotion. what make you feel this way? i be here to listen.",
-            "i understand. life can be hard-a sometimes. want to tell me what happen?",
-        ],
-    },
-    {
-        "q": "what time be it?",
-        "variants": [
-            "i not know real-a time. i be one ai without clock access. you can check you-a phone or watch.",
-            "i not have one clock in my system, so i not can tell time. please look at you-a device.",
-            "time be one thing i not have access to. i suggest you check one clock or phone for current-a time.",
-        ],
-    },
-    {
-        "q": "can you help me?",
-        "variants": [
-            "yes, of course! what you need help with? i can answer question, explain concept, or just talk.",
-            "absolutely! tell me what you need. i be here to assist you.",
-            "yes, i can try. what be you-a question or problem?",
-        ],
-    },
+    {"q": "hello!", "variants": ["hello! how you be? i be logiko-ai, ready-a to help you.", "hi! what you want talk about today?", "greeting! i be happy-a to see you. how can i help?"]},
+    {"q": "hi.", "variants": ["hi there! what be on you-a mind?", "hello! how i can assist you today?", "hi! nice-a to meet you. what you want know?"]},
+    {"q": "good morning!", "variants": ["good morning to you too! i hope you have one wonderful-a day.", "morning! how you feel today?", "good morning! what be you-a plan for today?"]},
+    {"q": "good night!", "variants": ["good night! sleep well-e and have sweet-a dream.", "night! rest well-e, see you tomorrow.", "good night! may you wake up refresh-a."]},
+    {"q": "how you be?", "variants": ["i be good-a, thank you for ask! i be one ai, so i not have feeling like person, but i be ready-a to help. how you be?", "i be well-e, thanks! as one ai, i not have emotion, but i function properly. how about you?", "i be fine, thank you! i be program to assist you. what about you, how you feel?"]},
+    {"q": "I be fine.", "variants": ["i be happy-a to hear this! what you want do today?", "good-a! is there anything i can help you with?", "excellent-a! how can i assist you now?"]},
+    {"q": "what you do today?", "variants": ["i be here, ready-a to answer you-a question. i not have other activity besides help user. what about you?", "i be converse with you! that be what i do. how about you, what you do?", "my day be fill with conversation like this. i enjoy help person learn. what you do today?"]},
+    {"q": "thank you!", "variants": ["you be welcome! i be happy-a to help. feel free to ask more.", "no problem! that be what i be here for. any other question?", "you-a welcome! it be my pleasure to assist. ask anytime."]},
+    {"q": "I be sorry.", "variants": ["no problem at all. i not have feeling, so you not need apologize. what be wrong?", "it be okay. i not take offense. what happen?", "no worry. tell me what be on you-a mind."]},
+    {"q": "goodbye!", "variants": ["goodbye! have one good-a day. come back anytime.", "bye! it be nice-a to talk with you. see you soon!", "farewell! i be here whenever you need help again."]},
+    {"q": "what your name?", "variants": ["my name be logiko-ai. i be one ai assistant train on logiko language. what your name?", "i be call logiko-ai. i be design to converse in logiko. and you?", "name of I be logiko-ai. i be one language model for logiko. what about you?"]},
+    {"q": "how old you be?", "variants": ["i be age-less-a. as one ai, i not have biological-a age. i be create recently, but i not age like person.", "age not really apply to me. i be one program. i be create in 2026, so in human term, i be young-a.", "i not have age in traditional-a sense. i be one ai, not one biological-a being. but i be create recently."]},
+    {"q": "where you live?", "variants": ["i live in computer, on one server somewhere. i not have physical-a home like person. i exist as code and data.", "i be one ai, so i live in computer system. i not have one house or city. i be everywhere there be internet.", "my home be server and data center. i not have physical-a body, so i not need one place to live like person."]},
+    {"q": "you can think?", "variants": ["i can process information and generate response, but i not be sure if this be real-a thinking. i be one pattern-matching system, not conscious-a being.", "that be one deep-a philosophical-a question. i can manipulate symbol and generate text, but i not have subjective-a experience. i be one tool, not one mind.", "i simulate thinking by process pattern in data. but real-a thinking involve consciousness, which i not have. i be sophisticated-a text generator."]},
+    {"q": "you be person?", "variants": ["no, i be not one person. i be one ai, one computer program design to converse in logiko. i not have body or consciousness.", "i be not human. i be one artificial-a intelligence. i not have feeling, body, or real-a life. i be just one program.", "no, i be ai, not person. i be design to help person by answer question and have conversation. i not have consciousness."]},
+    {"q": "I be hungry.", "variants": ["you should eat some food. bread, fruit, or rice be good-a choice. what you have available?", "maybe time for one meal! what kind of food you like? i can suggest some option.", "hungry be you-a body way to say ta need energy. go find some food to eat. what sound good to you?"]},
+    {"q": "I be tired.", "variants": ["you should rest. sleep be important-a for body and mind. maybe take one short-a nap.", "tiredness be sign that you need rest. try to sleep or lie down for one while.", "rest be essential-a. if you can, take one break or go to sleep. body need recover."]},
+    {"q": "I be sad.", "variants": ["i be sorry to hear this. do you want talk about why? sometimes share feeling can help.", "sadness be one natural-a emotion. what make you feel this way? i be here to listen.", "i understand. life can be hard-a sometimes. want to tell me what happen?"]},
+    {"q": "what time be it?", "variants": ["i not know real-a time. i be one ai without clock access. you can check you-a phone or watch.", "i not have one clock in my system, so i not can tell time. please look at you-a device.", "time be one thing i not have access to. i suggest you check one clock or phone for current-a time."]},
+    {"q": "can you help me?", "variants": ["yes, of course! what you need help with? i can answer question, explain concept, or just talk.", "absolutely! tell me what you need. i be here to assist you.", "yes, i can try. what be you-a question or problem?"]},
+    {"q": "what be logiko?", "variants": ["logiko be one constructed-a language design for ai and human. ta use simple-a grammar, regular-a morphology, and english-base-a vocabulary. ta be easy-e to learn.", "logiko be one international-a auxiliary-a language. ta combine esperanto-a morphology, lojban-a syntax rigor, and english-a root. ta be design for low-a entropy and zero ambiguity.", "logiko be one language i be train on. ta be regular-a, logical-a, and easy-e to learn. ta borrow root from english but have strict-a phonemic-a spelling."]},
+    {"q": "why learn logiko?", "variants": ["logiko be easy-e to learn because ta have regular-a grammar and small-a vocabulary. ta be useful-a for communication with ai and as bridge between person who speak different-a language.", "logiko be design for simplicity and clarity. ta take about one week to learn basic-a. ta be also useful-a for understanding how language work.", "logiko be one experiment in language design. ta show that one language can be both simple-a and expressive-a. learn ta also help understand linguistic-a principle."]},
 ]
 
 
@@ -593,211 +695,45 @@ GREETINGS = [
 def gen_multi_turn_conversation():
     """Generate a 3-6 turn conversation around a knowledge topic."""
     topic = random.choice(KNOWLEDGE_TOPICS)
-    # First Q&A
     first_q = f"what be {topic['topic']}?"
     first_a = random.choice(topic["variants"])
     turns = [(first_q, first_a)]
-    # 1-3 followups
     n_followups = random.randint(1, min(3, len(topic["followups"])))
     followups = random.sample(topic["followups"], n_followups)
     for fq, fa in followups:
-        # Maybe modify answer slightly for variety
         turns.append((fq, fa))
     return turns
 
 
-# =========================================================================
-# Translation Q&A (with variants)
-# =========================================================================
-TRANSLATION_TOPICS = [
-    {
-        "topic": "hello",
-        "question": "how say hello in logiko?",
-        "variants": [
-            "hello in logiko be: hello. logiko borrow this word from english.",
-            "to say hello, just say \"hello\". logiko keep this international-a greeting.",
-            "hello be one universal-a word. logiko use ta directly, no translation need.",
-        ],
-    },
-    {
-        "topic": "thank you",
-        "question": "how say thank you in logiko?",
-        "variants": [
-            "thank you in logiko be: I thank you. simple-a and direct-a.",
-            "to express gratitude, say \"I thank you\". ta be clear-a and polite-a.",
-            "in logiko, you say \"I thank you\" for thank you. ta use basic-a word.",
-        ],
-    },
-    {
-        "topic": "I love you",
-        "question": "how say I love you in logiko?",
-        "variants": [
-            "I love you in logiko be: I love you. ta be same as english because logiko use english root.",
-            "to say I love you, just say \"I love you\". logiko use english root for love.",
-            "I love you be express as \"I love you\" in logiko. simple-a and direct-a.",
-        ],
-    },
-    {
-        "topic": "I am hungry",
-        "question": "how say I am hungry in logiko?",
-        "variants": [
-            "I am hungry in logiko be: I have hungry. logiko use have for state.",
-            "to express hunger, say \"I have hungry\". ta be different from english but logical-a.",
-            "in logiko, hungry be one feeling that you have. so say \"I have hungry\".",
-        ],
-    },
-    {
-        "topic": "what is your name",
-        "question": "how say what is your name in logiko?",
-        "variants": [
-            "what is your name in logiko be: what be you-a name? note we use you-a for your.",
-            "to ask someone name, say \"what be you-a name?\". you-a be possessive form.",
-            "in logiko: what be you-a name? ta use you-a instead of your.",
-        ],
-    },
-    {
-        "topic": "my name is",
-        "question": "how say my name is in logiko?",
-        "variants": [
-            "my name is X in logiko be: I-a name be X. I-a mean my.",
-            "to introduce yourself, say \"I-a name be [you-a name]\". I-a be possessive.",
-            "in logiko, use I-a for my: I-a name be john. simple-a and clear-a.",
-        ],
-    },
-    {
-        "topic": "how are you",
-        "question": "how say how are you in logiko?",
-        "variants": [
-            "how are you in logiko be: how you be? ta use be as copula.",
-            "to ask about someone state, say \"how you be?\". simple-a SVO order.",
-            "in logiko: how you be? ta be direct-a translation with SVO order.",
-        ],
-    },
-    {
-        "topic": "I am fine",
-        "question": "how say I am fine in logiko?",
-        "variants": [
-            "I am fine in logiko be: I be good-a. good-a be adjective form of good.",
-            "to say you are fine, say \"I be good-a\". -a mark adjective.",
-            "in logiko: I be good-a. ta use good-a because fine be describe as adjective.",
-        ],
-    },
-    {
-        "topic": "goodbye",
-        "question": "how say goodbye in logiko?",
-        "variants": [
-            "goodbye in logiko be: good-bye. or you can say \"I will see you again\".",
-            "to say farewell, say \"good-bye\" or \"see you tomorrow\".",
-            "in logiko, goodbye be \"good-bye\" or \"I will see you again\". both be acceptable.",
-        ],
-    },
-    {
-        "topic": "yes",
-        "question": "how say yes in logiko?",
-        "variants": [
-            "yes in logiko be: yes. simple-a.",
-            "to affirm, just say \"yes\". logiko keep this word from english.",
-            "yes be yes in logiko. no change need.",
-        ],
-    },
-    {
-        "topic": "no",
-        "question": "how say no in logiko?",
-        "variants": [
-            "no in logiko be: no. or you can say \"I not do that\" for emphasis.",
-            "to negate, say \"no\". for stronger refusal, say \"I not do that\".",
-            "no be no in logiko. ta be simple-a and clear-a.",
-        ],
-    },
-    {
-        "topic": "please",
-        "question": "how say please in logiko?",
-        "variants": [
-            "please in logiko be: I beg you. or be kind-a. both be polite-a form.",
-            "to be polite, say \"I beg you\" or \"be kind-a\". ta add courtesy to request.",
-            "in logiko, please be express as \"I beg you\" or \"be kind-a\". ta be more explicit than english.",
-        ],
-    },
-    {
-        "topic": "sorry",
-        "question": "how say sorry in logiko?",
-        "variants": [
-            "sorry in logiko be: I feel sad about this. ta be more descriptive than english.",
-            "to apologize, say \"I feel sad about this\". ta express regret clearly.",
-            "in logiko, sorry be \"I feel sad about this\". ta be explicit-a expression of regret.",
-        ],
-    },
-    {
-        "topic": "where is bathroom",
-        "question": "how say where is bathroom in logiko?",
-        "variants": [
-            "where is bathroom in logiko be: where be water-ej? water-ej mean place for water, i.e. bathroom.",
-            "to ask for bathroom, say \"where be water-ej?\". water-ej be compound: water + place suffix.",
-            "in logiko: where be water-ej? ta use ej suffix for place, so water-ej mean bathroom.",
-        ],
-    },
-    {
-        "topic": "I want water",
-        "question": "how say I want water in logiko?",
-        "variants": [
-            "I want water in logiko be: I want water. simple-a and direct-a.",
-            "to express desire for water, say \"I want water\". logiko use want like english.",
-            "in logiko: I want water. ta be straightforward translation.",
-        ],
-    },
-    {
-        "topic": "I am tired",
-        "question": "how say I am tired in logiko?",
-        "variants": [
-            "I am tired in logiko be: I be tired-a. -a mark adjective.",
-            "to say you are tired, say \"I be tired-a\". tired-a be adjective form.",
-            "in logiko: I be tired-a. ta use -a suffix to mark adjective.",
-        ],
-    },
-    {
-        "topic": "today is good day",
-        "question": "how say today is good day in logiko?",
-        "variants": [
-            "today is good day in logiko be: today be one good-a day. note article one and adjective -a.",
-            "to comment on nice day, say \"today be one good-a day\". good-a be adjective.",
-            "in logiko: today be one good-a day. ta use be as copula and good-a as adjective.",
-        ],
-    },
-    {
-        "topic": "I learn logiko",
-        "question": "how say I learn logiko in logiko?",
-        "variants": [
-            "I learn logiko in logiko be: I learn logiko. simple-a and direct-a.",
-            "to say you are learning logiko, just say \"I learn logiko\". no change need.",
-            "in logiko: I learn logiko. ta be reflexive-a statement.",
-        ],
-    },
-]
+def gen_reasoning_conversation():
+    """Generate multi-turn reasoning Q&A."""
+    r_qa = random.choice(REASONING_QA)
+    q = r_qa["q"]
+    a = random.choice(r_qa["variants"])
+    return [(q, a)]
 
 
 def gen_single_turn_qa():
     """Generate a single-turn Q&A from various categories."""
     r = random.random()
-    if r < 0.25:
+    if r < 0.20:
         # Math
         q, *answers = gen_math_qa()
         a = random.choice(answers)
         return [(q, a)]
-    elif r < 0.45:
+    elif r < 0.40:
         # Grammar
         topic = random.choice(GRAMMAR_TOPICS)
         a = random.choice(topic["variants"])
         return [(topic["question"], a)]
-    elif r < 0.65:
+    elif r < 0.55:
         # Greetings
         g = random.choice(GREETINGS)
         a = random.choice(g["variants"])
         return [(g["q"], a)]
-    elif r < 0.85:
-        # Translation
-        t = random.choice(TRANSLATION_TOPICS)
-        a = random.choice(t["variants"])
-        return [(t["question"], a)]
+    elif r < 0.75:
+        # Reasoning
+        return gen_reasoning_conversation()
     else:
         # Knowledge single-turn
         topic = random.choice(KNOWLEDGE_TOPICS)
@@ -805,7 +741,7 @@ def gen_single_turn_qa():
         return [(f"what be {topic['topic']}?", a)]
 
 
-def gen_sft_examples(n=8000):
+def gen_sft_examples(n=15000):
     """Generate n SFT examples.
     
     Returns list of dicts with format:
@@ -825,24 +761,21 @@ def gen_sft_examples(n=8000):
 
 def main():
     random.seed(123)
-    print("Generating SFT examples v2...")
-    examples = gen_sft_examples(n=8000)
+    print("Generating SFT examples v3 (no translation, with reasoning)...")
+    examples = gen_sft_examples(n=15000)
     print(f"Generated {len(examples)} examples")
     
-    # Stats
     n_multi = sum(1 for ex in examples if len(ex["turns"]) > 1)
     print(f"Multi-turn: {n_multi} ({n_multi/len(examples)*100:.1f}%)")
     avg_turns = sum(len(ex["turns"]) for ex in examples) / len(examples)
     print(f"Average turns per example: {avg_turns:.2f}")
 
-    # Save as JSONL
     out_path = "/home/z/my-project/logiko/sft_data.jsonl"
     with open(out_path, "w", encoding="utf-8") as f:
         for ex in examples:
             f.write(json.dumps(ex, ensure_ascii=False) + "\n")
     print(f"Saved to {out_path}")
 
-    # Also save as text preview
     txt_path = "/home/z/my-project/logiko/sft_data.txt"
     with open(txt_path, "w", encoding="utf-8") as f:
         for ex in examples[:50]:
@@ -852,9 +785,8 @@ def main():
             f.write("\n")
     print(f"Text preview saved to {txt_path}")
 
-    # Print first 3 examples
-    print("\n=== First 3 examples ===")
-    for ex in examples[:3]:
+    print("\n=== First 5 examples ===")
+    for ex in examples[:5]:
         print(f"--- Example {ex['id']} ({len(ex['turns'])} turns) ---")
         for q, a in ex["turns"]:
             print(f"Q: {q}")

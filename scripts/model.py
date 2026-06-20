@@ -292,9 +292,10 @@ def load_model(path: str, map_location="cpu") -> Tuple[LogikoLM, dict]:
 
 def main():
     """Quick sanity check."""
+    # v3: upgraded to ~8M params for better quality
     cfg = ModelConfig(
-        vocab_size=1500, d_model=256, n_heads=8, n_kv_heads=2,
-        n_layers=6, d_ff=1024, max_seq_len=512, qk_norm=True,
+        vocab_size=1500, d_model=256, n_heads=8, n_kv_heads=4,
+        n_layers=8, d_ff=1024, max_seq_len=512, qk_norm=True,
     )
     model = LogikoLM(cfg)
     n_params = model.num_parameters()

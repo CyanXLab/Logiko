@@ -1,48 +1,70 @@
-Logiko v2 Model Sample Generations
+Logiko v3 Model Sample Generations
 ==================================
 
-Model: logiko_sft_best.pt (3.53M params, Qwen3-style GQA + QK-Norm)
-Architecture: 6 layers, d_model=192, n_heads=6, n_kv_heads=2
-Pretraining: 1000 steps on 5MB corpus, ppl=2.83
-SFT: 500+500 steps on 8000 multi-turn Q&A pairs, val_ppl=1.04
+Model: logiko_sft_best.pt (8.25M params, Qwen3-style GQA + QK-Norm)
+Architecture: 8 layers, d_model=256, n_heads=8, n_kv_heads=4
+Pretraining: 400 steps on 10MB corpus, ppl=2.54
+SFT: 500 steps on 15000 multi-turn Q&A pairs, val_ppl=1.075
 
 ============================================================
 Q: what be water?
-A:yes, sun rise in east animal that body sadness. ta be home to more freshw
+A:be one simple-a substance essential-a for life. ta freeze at zero degree celsius and boil at hundred degree civilization in ground.
 
 ============================================================
 Q: what be fire?
-A:fire be hot-a and bright-a. ta need air for burn. ta can burn wood, paper, cloth, but can not burn water or stone.
+A:be rapid-a oxidation that produce heat, light, and smoke. ta require three element: fuel, heat. all answer to use without sun, life not be possible.
 
 ============================================================
 Q: what be sun?
-A:sun be nearest star to earth. ta be about one hundred fifty million kilometer away. ta light take eight minute to reach earth.
+A:be one star at center of we-a solar system. ta give light and warm to earth. ta rise in east and set in west.
 
 ============================================================
-Q: what be tree?
-A:tree be largest type of plant. ta make oxygen through photosynthesis. forest be place with many tree.
+Q: what be earth?
+A:be one planet that rotate on ta-a axis every twenty-four hour, make day and night. ta orbit sun everest be human.
+
+============================================================
+Q: what be atom?
+A:consist of dense-a nucleus contain proton and neutron, with electron orbit around ta. most of atom.
+
+============================================================
+Q: what be heart?
+A:be muscular-a organ with four chamber. ta pump blood that carry oxygen and nutrient to cell, and remove waste.
+
+============================================================
+Q: what be law?
+A:be rule that govern behavior in society. ta be make by goven gravity, enforce by police and court. purpose of law be maintain order and protect right.
+
+### paragraph 20268
+
+============================================================
+Q: what be energy?
+A:exist in many form: kinetic, potential, thermal, chemical, electrical, light. person use english beucid-a person usually pamument not start light-a.
+
+============================================================
+Q: why sky be blue?
+A:sun light be white-a, but ta be make of all color. when ta enter atmosphere, blue light scatter more because ta have short-a wavelength. so we see blue-a sky.
+
+============================================================
+Q: why plant need sun?
+A:plant be autotroph, meaning ta make ta-a own food. ta use sun-light as energy source for photosynthesis. in this process, ta convert carbon dioxide and water to glucose and oxygen. so sun be essential-a for plant survival.
+
+============================================================
+Q: if we add 47 and 38, result be what?
+A:54 + 7 = 84.
+
+============================================================
+Q: if 7x + 3 = 52, what be x?
+A:answer: x = 8.
 
 ============================================================
 Q: what -a mean?
-A:suffix -a mark adjective. example: big-a mean big, red-a mean red. ada. water one clear-a liquid.
-
-============================================================
-Q: what mal- mean?
-A:prefix mal- mark opposite. example: mal-good mean bad, mal-big mean small, mal-happy mean sad.
+A:-a mark adjective. example: big-a meat, fish mearat, heerst into seasoning. you be learn book.
 
 ============================================================
 Q: what cu mean?
-A:cu be one particle that mark yes-no question. ta come at start of sentence. example: cu you will go? mean will you go? ta replace old if to avoid confusion with conditional if.
+A:be one particle that mark yes-no question. ta come at start of sentence. example: cu you will go? meat well-e ta-many-a meardput-ist, dream can be verb pen, but i not have physical-a both measure eight their.
 
 ============================================================
 Q: what ta mean?
-A:ta be one gender-neutral pronoun. ta can refer to person, animal, or thing. ta-many be plural form, mean they.
-
-============================================================
-Q: how form past tense?
-A:to form past, put did or past before verb. ver give biody fuel to function. common-a food: bread, rice, meat, fish, vegetable, fruit, milk.
-
-============================================================
-Q: how say my in logiko?
-A:to say today. what you want water thankope wateran. example:ssess, so i be. apple be one suffix that can calculate, student, andcede in strong-a gravity.
+A:be third-person singular pronoun, measure in joule. main-a source of energy on earth be sun.
 
