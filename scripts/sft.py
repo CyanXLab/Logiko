@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-SFT (Supervised Fine-Tuning) for Logiko
-=========================================
-Loads a pretrained checkpoint, fine-tunes on Q&A pairs.
+SFT v2 (Logiko v2.0) — Multi-turn Support
+==========================================
+Supports multi-turn conversations:
+  - Each example has 1+ turns of (Q, A) pairs
+  - Format: <bos>Q: <q1>\nA: <a1>\nQ: <q2>\nA: <a2>...<eos>
+  - Loss computed ONLY on A parts (Q parts masked with -100)
+  - Sliding window: if total length > max_len, truncate from start (keep latest turns)
 
-Format per example:
-    <bos>Q: <question>\nA: <answer><eos>
-
-Loss is computed ONLY on the answer tokens (prompt tokens are masked out).
+Improvements over v1:
+  - Multi-turn context support
+  - Answer-only loss masking (per-turn)
+  - Better padding
+  - Validation split with multi-turn
 """
 import os
 import sys
@@ -15,6 +20,7 @@ import json
 import time
 import math
 import argparse
+import random
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -25,9 +31,13 @@ from model import LogikoLM, ModelConfig, save_model, load_model
 
 
 class SFTDataset(Dataset):
-    """SFT 数据集：每个样本是 (prompt_ids, answer_ids)
-    构造为 (input_ids, labels) 其中 labels 在 prompt 部分 = -100（忽略），
-    answer 部分 = answer token ids + EOS。
+    """Multi-turn SFT dataset.
+
+    Each example: list of (question, answer) turns.
+    Tokenize as: <bos> Q1 \n A1 <eos> \n Q2 \n A2 <eos> ... 
+    Actually we use: <bos> "Q: q1\nA: a1\nQ: q2\nA: a2" <eos>
+    
+    Loss is computed on tokens INSIDE "A: ..." segments (everything after "A: " until next "\nQ: " or EOS).
     """
 
     def __init__(self, examples: list, tokenizer: BPETokenizer, max_len: int = 256):
@@ -38,46 +48,94 @@ class SFTDataset(Dataset):
     def __len__(self):
         return len(self.examples)
 
+    def _encode_turns(self, turns):
+        """Encode multi-turn conversation into (input_ids, labels).
+        
+        Returns:
+            input_ids: list[int], length <= max_len
+            labels: list[int], same length, -100 where loss should be ignored
+        """
+        full_ids = [BOS_ID]
+        labels = [-100]  # BOS is never a target
+
+        for turn_idx, (q, a) in enumerate(turns):
+            # Encode Q part
+            q_text = f"Q: {q}\nA: "
+            q_ids = self.tok.encode(q_text, add_bos=False, add_eos=False)
+            full_ids.extend(q_ids)
+            labels.extend([-100] * len(q_ids))  # mask Q
+
+            # Encode A part (include EOS at end of last turn, or \n for non-last)
+            if turn_idx < len(turns) - 1:
+                a_text = a + "\n"
+            else:
+                a_text = a
+            a_ids = self.tok.encode(a_text, add_bos=False, add_eos=False)
+            full_ids.extend(a_ids)
+            labels.extend(a_ids)  # train on A
+
+            # For last turn, append EOS
+            if turn_idx == len(turns) - 1:
+                full_ids.append(EOS_ID)
+                labels.append(EOS_ID)
+
+        # Truncate from start if too long (keep latest turns)
+        if len(full_ids) > self.max_len:
+            # Find a safe truncation point: don't cut in the middle of an A segment
+            # Simple approach: just truncate from start, but try to start at a Q: boundary
+            cut = len(full_ids) - self.max_len
+            # Find next Q: or A: boundary after cut
+            # For simplicity, just hard-truncate
+            full_ids = full_ids[cut:]
+            labels = labels[cut:]
+            # Ensure first non-masked label aligns (set first few labels to -100 if needed)
+            # Set labels at the start to -100 until we're sure we're in an A segment
+            # Simple: set first 5 labels to -100 to avoid mid-word issues
+            for i in range(min(5, len(labels))):
+                labels[i] = -100
+
+        return full_ids, labels
+
     def __getitem__(self, idx):
         ex = self.examples[idx]
-        # 构造 prompt: "<question>\n"  (no Q: A: prefix; let model learn directly)
-        prompt = f"{ex['question']}\n"
-        # 构造 completion: "<answer>"
-        completion = ex["answer"]
-        # 编码（不加 BOS，因为后面要拼接）
-        prompt_ids = self.tok.encode(prompt, add_bos=False, add_eos=False)
-        completion_ids = self.tok.encode(completion, add_bos=False, add_eos=False)
-        completion_ids = completion_ids + [EOS_ID]
+        turns = ex["turns"]
+        full_ids, labels = self._encode_turns(turns)
 
-        # 拼接: <bos> prompt + completion
-        full_ids = [BOS_ID] + prompt_ids + completion_ids
-        # 截断
-        if len(full_ids) > self.max_len + 1:
-            full_ids = full_ids[:self.max_len + 1]
+        # Convert to next-token prediction format
+        # input_ids = full_ids[:-1], targets = full_ids[1:] shifted
+        # But our labels are already aligned: labels[i] is target for input_ids[i] predicting input_ids[i+1]
+        # Wait, let me re-think:
+        # In standard LM: logits[i] predicts token[i+1]
+        # So if we have full_ids = [t0, t1, t2, ...], we feed input = [t0, t1, ...] and target = [t1, t2, ...]
+        # If labels[i] should be t[i+1], then we set:
+        #   input_ids = full_ids[:-1]
+        #   labels[i] = full_ids[i+1] if i+1 is in an A segment, else -100
 
-        # input_ids = full_ids[:-1] (the context)
-        # labels[i] = full_ids[i+1] (the next-token target)
+        # Re-do: build input_ids and labels in shifted format
         input_ids = full_ids[:-1]
-        labels = full_ids[1:]
+        target_ids = full_ids[1:]
+        # The label for position i is target_ids[i] if it's part of an A segment
+        # In our original labels, labels[j] is the label for full_ids[j]
+        # But for next-token prediction, we want: input_ids[i] = full_ids[i], label = full_ids[i+1]
+        # So we want: label[i] = (label of full_ids[i+1] in original) = original_labels[i+1]
+        shifted_labels = labels[1:]  # length = len(input_ids)
+        # Mask: only train where shifted_labels != -100
+        # Also pad/truncate to max_len
+        assert len(input_ids) == len(shifted_labels)
 
-        # mask prompt 部分：prompt 长度（含 BOS） = 1 + len(prompt_ids)
-        prompt_len = 1 + len(prompt_ids)
-        for i in range(min(prompt_len, len(labels))):
-            labels[i] = -100
+        # Truncate to max_len
+        input_ids = input_ids[:self.max_len]
+        shifted_labels = shifted_labels[:self.max_len]
 
-        # padding
+        # Pad
         pad_len = self.max_len - len(input_ids)
         if pad_len > 0:
             input_ids = input_ids + [PAD_ID] * pad_len
-            labels = labels + [-100] * pad_len
-
-        # 截断到 max_len
-        input_ids = input_ids[:self.max_len]
-        labels = labels[:self.max_len]
+            shifted_labels = shifted_labels + [-100] * pad_len
 
         return (
             torch.tensor(input_ids, dtype=torch.long),
-            torch.tensor(labels, dtype=torch.long),
+            torch.tensor(shifted_labels, dtype=torch.long),
         )
 
 
@@ -107,19 +165,18 @@ def sft_train(args):
     device = torch.device(args.device)
     print(f"Device: {device}")
 
-    # 1. Tokenizer
     tok = BPETokenizer.load("/home/z/my-project/logiko/tokenizer.json")
     print(f"Tokenizer vocab size: {len(tok.vocab)}")
 
-    # 2. SFT 数据
     examples = load_sft_data(args.sft_data)
     print(f"Loaded {len(examples)} SFT examples")
-    # 切分 train/val
+    random.seed(42)
     random.shuffle(examples)
     n_val = min(200, len(examples) // 20)
     val_examples = examples[:n_val]
     train_examples = examples[n_val:]
-    print(f"Train: {len(train_examples)}, Val: {len(val_examples)}")
+    n_multi_train = sum(1 for ex in train_examples if len(ex["turns"]) > 1)
+    print(f"Train: {len(train_examples)} ({n_multi_train} multi-turn), Val: {len(val_examples)}")
 
     train_dataset = SFTDataset(train_examples, tok, max_len=args.max_len)
     val_dataset = SFTDataset(val_examples, tok, max_len=args.max_len)
@@ -132,14 +189,14 @@ def sft_train(args):
         val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0,
     )
 
-    # 3. 加载预训练模型
     print(f"Loading pretrained model from {args.pretrained}...")
     model, extra = load_model(args.pretrained, map_location=device)
     model.to(device)
     print(f"Model loaded. Pretrained step={extra.get('step')}, loss={extra.get('loss')}")
     print(f"Params: {model.num_parameters():,}")
+    print(f"Model max_seq_len: {model.cfg.max_seq_len} (SFT max_len: {args.max_len})")
+    assert args.max_len <= model.cfg.max_seq_len, "SFT max_len must be <= model max_seq_len"
 
-    # 4. 优化器
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=args.max_lr,
@@ -148,7 +205,6 @@ def sft_train(args):
         weight_decay=args.weight_decay,
     )
 
-    # 5. 训练循环
     grad_accum = args.grad_accum
     update_step = 0
     t0 = time.time()
@@ -156,7 +212,7 @@ def sft_train(args):
     running_count = 0
     best_val_loss = float("inf")
 
-    print(f"\nStarting SFT: {args.max_steps} steps, batch={args.batch_size}, grad_accum={grad_accum}")
+    print(f"\nStarting SFT v2: {args.max_steps} steps, batch={args.batch_size}, grad_accum={grad_accum}")
     print()
 
     data_iter = iter(train_loader)
@@ -203,7 +259,6 @@ def sft_train(args):
                 f"{sps:.2f} step/s | elapsed {elapsed:.0f}s"
             )
 
-        # 验证
         if update_step % args.eval_every == 0:
             model.eval()
             val_loss = 0.0
@@ -225,22 +280,19 @@ def sft_train(args):
                     "step": update_step,
                     "train_loss": avg_loss,
                     "val_loss": avg_val_loss,
-                    "stage": "sft",
+                    "stage": "sft_v2",
                 })
             model.train()
 
         if update_step % args.save_every == 0:
             ckpt = os.path.join(args.ckpt_dir, f"logiko_sft_step{update_step}.pt")
-            save_model(model, ckpt, extra={"step": update_step, "loss": avg_loss, "stage": "sft"})
+            save_model(model, ckpt, extra={"step": update_step, "loss": avg_loss, "stage": "sft_v2"})
 
-    # 保存最终
     final = os.path.join(args.ckpt_dir, "logiko_sft_final.pt")
-    save_model(model, final, extra={"step": update_step, "loss": avg_loss, "stage": "sft"})
+    save_model(model, final, extra={"step": update_step, "loss": avg_loss, "stage": "sft_v2"})
     print(f"\nSFT done. Final: {final}")
     print(f"Total time: {time.time()-t0:.1f}s, best val_loss: {best_val_loss:.4f}")
 
-
-import random
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -251,13 +303,13 @@ def parse_args():
     p.add_argument("--max_len", type=int, default=192)
     p.add_argument("--batch_size", type=int, default=8)
     p.add_argument("--grad_accum", type=int, default=2)
-    p.add_argument("--max_steps", type=int, default=2000)
+    p.add_argument("--max_steps", type=int, default=1500)
     p.add_argument("--warmup", type=int, default=50)
-    p.add_argument("--max_lr", type=float, default=2e-4)
-    p.add_argument("--min_lr", type=float, default=2e-5)
+    p.add_argument("--max_lr", type=float, default=1e-4)
+    p.add_argument("--min_lr", type=float, default=1e-5)
     p.add_argument("--weight_decay", type=float, default=0.01)
     p.add_argument("--max_grad_norm", type=float, default=1.0)
-    p.add_argument("--log_every", type=int, default=20)
+    p.add_argument("--log_every", type=int, default=50)
     p.add_argument("--eval_every", type=int, default=200)
     p.add_argument("--save_every", type=int, default=500)
     return p.parse_args()

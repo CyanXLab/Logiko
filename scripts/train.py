@@ -115,6 +115,7 @@ def train(args):
         vocab_size=len(tokenizer.vocab),
         d_model=args.d_model,
         n_heads=args.n_heads,
+        n_kv_heads=args.n_kv_heads,
         n_layers=args.n_layers,
         d_ff=args.d_ff,
         max_seq_len=args.seq_len,
@@ -231,6 +232,7 @@ def parse_args():
     # 模型尺寸（默认小模型 ~6M 参数，适合 CPU 训练）
     p.add_argument("--d_model", type=int, default=256)
     p.add_argument("--n_heads", type=int, default=8)
+    p.add_argument("--n_kv_heads", type=int, default=2)
     p.add_argument("--n_layers", type=int, default=6)
     p.add_argument("--d_ff", type=int, default=1024)
     # 训练超参

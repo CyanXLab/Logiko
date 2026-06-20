@@ -1,77 +1,48 @@
-Logiko Model Sample Generations
-================================
+Logiko v2 Model Sample Generations
+==================================
 
-Model: logiko_sft.pt (1.24M params, 800 pretrain steps + 800 SFT steps)
-Tokenizer: BPE v6, vocab=1500, 0 UNK
-Decoding: T=0.4, top_k=30, top_p=0.9, rep_penalty=1.15
+Model: logiko_sft_best.pt (3.53M params, Qwen3-style GQA + QK-Norm)
+Architecture: 6 layers, d_model=192, n_heads=6, n_kv_heads=2
+Pretraining: 1000 steps on 5MB corpus, ppl=2.83
+SFT: 500+500 steps on 8000 multi-turn Q&A pairs, val_ppl=1.04
 
 ============================================================
-PROMPT: 'Q: what be water?\nA: water'
 Q: what be water?
-A: water be one clear-a liquid. ta freeze in zero degree, and boil in hundred degree. all life need water.
+A:yes, sun rise in east animal that body sadness. ta be home to more freshw
 
 ============================================================
-PROMPT: 'Q: what be fire?\nA: fire'
 Q: what be fire?
-A: fire be hot-a and bright-a. ta need air for burn. ta can burn wood and paper, but can not burn water or stone.
+A:fire be hot-a and bright-a. ta need air for burn. ta can burn wood, paper, cloth, but can not burn water or stone.
 
 ============================================================
-PROMPT: 'Q: what be sun?\nA: sun'
 Q: what be sun?
-A: sun be one star. ta give light and warm to earth. ta rise in east and set in west.
+A:sun be nearest star to earth. ta be about one hundred fifty million kilometer away. ta light take eight minute to reach earth.
 
 ============================================================
-PROMPT: 'Q: what be tree?\nA: tree'
 Q: what be tree?
-A: tree be one plant. ta have root, trunk, branch, leaf. ta can live many year. ta give fruit, wood, and shadow.
+A:tree be largest type of plant. ta make oxygen through photosynthesis. forest be place with many tree.
 
 ============================================================
-PROMPT: 'Q: what be person?\nA: person'
-Q: what be person?
-A: person be one animal that can think and speak. ta have head, body, two arm, two leg. ta can make tool and build house.
-
-============================================================
-PROMPT: 'Q: what be music?\nA: music'
-Q: what be music?
-A: music be art of sound. person make music with voice or instrument. music can make person feel happy or sad.
-
-============================================================
-PROMPT: 'Q: what -a mean?\nA: suffix'
 Q: what -a mean?
-A: suffix -a mark adjective. example: big-a mean big, red-a mean red. adjective always come before noun.
+A:suffix -a mark adjective. example: big-a mean big, red-a mean red. ada. water one clear-a liquid.
 
 ============================================================
-PROMPT: 'Q: what mal- mean?\nA: prefix'
 Q: what mal- mean?
-A: prefix mal- mark opposite. example: mal-good mean bad, mal-big mean small, mal-happy mean sad.
+A:prefix mal- mark opposite. example: mal-good mean bad, mal-big mean small, mal-happy mean sad.
 
 ============================================================
-PROMPT: 'Q: how form question?\nA:'
-Q: how form question?
-A: do what you want talk about?
+Q: what cu mean?
+A:cu be one particle that mark yes-no question. ta come at start of sentence. example: cu you will go? mean will you go? ta replace old if to avoid confusion with conditional if.
 
 ============================================================
-PROMPT: 'Q: what ta mean?\nA: ta'
 Q: what ta mean?
-A: ta be third-person pronoun, mean he, she, or it. ta-many mean they.
+A:ta be one gender-neutral pronoun. ta can refer to person, animal, or thing. ta-many be plural form, mean they.
 
 ============================================================
-PROMPT: 'Q: how say I love you in logiko?\nA:'
-Q: how say I love you in logiko?
-A: I love you in logiko be: I love you.
+Q: how form past tense?
+A:to form past, put did or past before verb. ver give biody fuel to function. common-a food: bread, rice, meat, fish, vegetable, fruit, milk.
 
 ============================================================
-PROMPT: 'Q: what be season?\nA: year'
-Q: what be season?
-A: year have four season: spring, summer, autumn, winter. in spring, plant grow. in summer, weather be hot-a.
-
-============================================================
-PROMPT: 'Q: what be book?\nA: book'
-Q: what be book?
-A: book be many paper with word, bind together.
-
-============================================================
-PROMPT: 'Q: what be food?\nA: food'
-Q: what be food?
-A: food give energy to body. person need food for live. bread, rice, meat, vegetable be common-a food.
+Q: how say my in logiko?
+A:to say today. what you want water thankope wateran. example:ssess, so i be. apple be one suffix that can calculate, student, andcede in strong-a gravity.
 
